@@ -1,0 +1,27 @@
+{
+	"manifest_version": 3,
+	"name": "Policy Highlighter",
+	"description": "",
+	"version": "0.0.1",
+	
+	"icons": {},
+	
+	"background": {
+		"service_wroker": "background.js"
+	},
+	"permissions": [
+		"notifications",
+		"storage",
+		"alarms",
+		"activeTab",
+		"http://localhost/*"
+	],
+	"action": {
+        "default_popup": "popup.html"
+    },
+	"content_scripts": [{
+	 	"matches": ["<all_urls>"],
+	 	"css": ["style.css"],
+	 	"js": ["main.js"]
+	 }]
+}

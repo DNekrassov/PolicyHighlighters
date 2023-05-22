@@ -1,0 +1,371 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Policy Highlighters</title>
+	
+	<style>
+		/* fonts from goodle fonts :3 */
+/*		@font-face { font-family: shoulders; src: url('Big_Shoulders_Text/static/BigShouldersText-Black.ttf'); } */
+		@font-face { font-family: goldman; src: url('Goldman/Goldman-Regular.ttf'); } 
+/*		@font-face { font-family: odibeesan; src: url('Odibee_Sans/OdibeeSans-Regular.ttf'); } */
+/*		@font-face { font-family: wallpoet; src: url('Wallpoet/Wallpoet-Regular.ttf'); } */
+		@font-face { font-family: coda; src: url('Coda/Coda-Regular.ttf'); } 
+		html, body {
+			margin: 0;
+		}
+		body {
+			color: #f0f0f0;
+			background-color: #202020;
+			border: 1px solid #505050;
+			font-size: 10px;
+			font-family: coda /*sans-serif*/;
+		}
+		*, *:before, *:after { box-sizing: border-box; }
+		button {
+			color: inherit;
+			background-color: inherit;
+			font: inherit;
+			border: 0;
+			padding: 0;
+			margin: 0;
+			cursor: pointer;
+		}
+		style, script, .hidden {
+			display: none !important;
+		}
+		
+		
+		.dim { color: #b0b0b0; }
+		.trans, .trans:before, .trans:after { transition: 0.2s; }
+		.flex-row, .flex-col {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.flex-row { flex-direction: row; }
+		.flex-col { flex-direction: column; }
+		.verti-spaced > *:not(:last-child) { margin-bottom: 16px; }
+		
+		
+		.wings, .braces {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		
+		.wings:before, .wings:after, .braces:before, .braces:after {
+			content: "";
+			flex: 1;
+			border-color: #b0b0b0;
+			border-style: solid;
+			border-width: 1px 0 0;
+			margin-top: 0.5lh;
+			align-self: flex-start;
+		}
+		.wings:before, .braces:before {
+			border-width: 1px 0 0 1px;
+			transform: skew(-45deg);
+		}
+		.wings:after, .braces:after {
+			border-width: 1px 1px 0 0;
+			transform: skew(45deg);
+		}
+		
+		.wings.up:before, .wings.up:after, .braces.up:before, .braces.up:after {
+			margin-bottom: 0.5lh;
+			align-self: flex-end;
+		}
+		.wings.up:before, .braces.up:before {
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg);
+		}
+		.wings.up:after, .braces.up:after {
+			border-width: 0 1px 1px 0;
+			transform: skew(-45deg);
+		}
+		
+		.wings:before, .wings:after {
+			height: 1px;
+		}
+		.wings:before { margin-left: 0; margin-right: 6px; }
+		.wings:after { margin-left: 6px; margin-right: 0; }
+		
+		.braces:before, .braces:after {
+			height: 0.5lh;
+		}
+		.braces:before { margin-left: 0.25lh; margin-right: calc(6px + 0.25lh); }
+		.braces:after { margin-left: calc(6px + 0.25lh); margin-right: 0.25lh; }
+		
+		
+		.braces:empty {
+			height: 1lh;
+		}
+		.braces:empty:before {
+			margin-right: 0;
+		}
+		.braces:empty:after {
+			margin-left: 0;
+		}
+		
+		/*
+		 _____
+		|    /| old style: the center of rotation (marked x) makes 
+		| _x| | the rotation looks unnatural, cuz it's not the arrow's
+		|/____| center of mass.
+		 ________
+		|    /|  | new style: we pad the arrow to shift the center of
+		| __| |  | rotation to the center of mass.
+		|/___x|  | the arrow = the :before element = the inner square
+		|________| the element itself = the arrow box + the "padding".
+		*/
+		.arrow {
+			height: 9px; 
+			width: 9px; 
+			display: inline-block;
+			vertical-align: middle;
+			rotate: 45deg;
+		}
+		.arrow:before {
+			content: "";
+			display: block;
+			height: 6px; 
+			width: 6px; 
+			border-top: 2px solid transparent;
+			border-left: 2px solid transparent;
+			border-bottom: 2px solid #b0b0b0;
+			border-right: 2px solid #b0b0b0;
+		}
+		.arrow.up { rotate: -135deg; }
+		
+		
+		#header {
+/*			background: linear-gradient(to right, #80c0ff, 60px, #202020 200px);*/
+			background-color: #202020;
+			border-bottom: 1px solid #b0b0b0;
+		}
+		#title {
+			font-size: 18px;
+			font-weight: bold;
+		}
+		.menu-item {
+			font-weight: bold;
+			color: #b0b0b0;
+			
+			width: 60px;
+			padding: 16px 8px;
+			margin-left: 8px;
+		}
+		.menu-item:hover, .menu-item.selected {
+			color: #f0f0f0;
+		}
+		#selection_highlighter {
+			height: 10px;
+			width: 60px;
+			
+			background: linear-gradient(#80c0ff00, #80c0ff);
+			transition: 0.1s;
+		}
+		
+		
+		#pages > * {
+			padding: 16px 16px 16px;
+			background: linear-gradient(#505050, #202020 80px);
+		}
+		#tables {
+			display: flex;
+			flex-direction: row;
+		}
+		#tables > *:not(:last-child) {
+			margin-right: 10px;
+		}
+		.table > *:not(:last-child) {
+			margin-bottom: 4px;
+		}
+		.row {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		.row > *:not(:last-child) {
+			margin-right: 4px;
+		}
+		.cell {
+			border-width: 1px;
+			border-style: solid;
+			height: 30px;
+			width: 60px;
+			
+			text-align: center;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+		}
+		
+		/*.unused {
+			box-shadow: 0 0 6px 2px #00ff0040;
+			background-color: #00ff0040;
+			border-color: #40ff40;
+			color: #40ff40;
+		}
+		
+		.opt-in {
+			box-shadow: 0 0 6px 2px #a0ff0040;
+			background-color: #a0ff0040;
+			border-color: #e0ff20;
+			color: #e0ff20;
+		}*/
+		
+		.cell.header {
+			border-width: 0px;
+			font-weight: bold;
+		}
+		
+		.cell.unused {
+			box-shadow: 0 0 6px 2px #80c0ff40;
+			background-color: #80c0ff40;
+			border-color: #80c0ff;
+			color: #80c0ff;
+		}
+		.cell.opt-in {
+			box-shadow: 0 0 6px 2px #a0e0ff40;
+			background-color: #a0e0ff40;
+			border-color: #a0d0ff;
+			color: #a0d0ff;
+		}
+		.cell.opt-out {
+			box-shadow: 0 0 6px 2px #ff700040;
+			background-color: #ff700040;
+			border-color: #ffb040;
+			color: #ffb040;
+		}
+		.cell.used {
+			box-shadow: 0 0 6px 2px #ff000040;
+			background-color: #ff000040;
+			border-color: #ff4040;
+			color: #ff4040;
+		}
+		
+		.cell.unused:before { content: "-"; }
+		.cell.opt-in:before { content: "opt in"; }
+		.cell.opt-out:before { content: "opt out"; }
+		.cell.used:before { content: "used"; }
+		
+
+	</style>
+	
+	<script src="popup.js"></script>
+	
+</head>
+
+<body>
+	
+	<div id="header" class="flex-row" style="height: 60px; padding: 0 16px;">
+		
+		<span id="title" style="flex: 1;">Policy Highlighters</span>
+		
+		<div style="position: relative; align-self: flex-end;">
+			<div id="menu">
+				<button class="trans menu-item">Summary</button>
+				<button class="trans menu-item">Settings</button>
+				<button class="trans menu-item">About</button>
+			</div>
+			<div id="selection_highlighter" style="position: absolute; bottom: 0;"></div>
+		</div>
+		
+		<!-- Top-Right Fancy Corner(TM) -->
+		<div style="position: absolute;
+			height: 16px; width: 220px;
+			top: 0; right: -20px;
+			background-color: #404040;
+			border-color: #b0b0b0; border-style: solid;
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg)">
+		</div>
+		
+	</div>
+	
+	<div id="pages">
+		
+		<div id="summary_pages">
+			
+			<!-- table page -->
+			<div class="flex-col verti-spaced">
+				<div id="tables">
+					<div class="table">
+						<div class="row wings" style="opacity: 0;">X</div>
+						<div class="row">
+							<div class="cell header"></div>
+						</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Internally used</div>
+						<div class="row">
+							<div class="cell header">Service</div>
+							<div class="cell header">Maintenance</div>
+							<div class="cell header">Marketing</div>
+							<div class="cell header">Profiling</div>
+						</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Shared</div>
+						<div class="row">
+							<div class="cell header">Other Companies</div>
+							<div class="cell header">Public Forums</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="dim" style="width: 340px; text-align: center;">
+					<b>Uncollected Data:</b> <span id="unused"></span>
+				</div>
+				
+				<!-- a wrapper for the legend button & box, to not add a space after the button -->
+				<div class="flex-col">
+					<button id="legend_button" class="dim wings braces" style="width: 360px;">
+						Legend
+						<div id="legend_arrow" class="arrow up" style="margin-left: 5px;"></div>
+					</button>
+					
+					<!-- a wrapper to make the legend stick to the bottom (flex-end) of the box,
+						so overflow crops it at the top (to make the bottom brace drop instead of reveal) -->
+					<div id="legend_box" class="flex-row" style="width: 400px; overflow: hidden; text-align: center;">
+						<div class="dim flex-col verti-spaced" style="align-self: flex-end; align-items: stretch;">
+							<div style="height: 0;"></div> <!-- a dummy to force padding -->
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<div class="cell unused"></div>
+								<div class="cell opt-in"></div>
+								<div class="cell opt-out"></div>
+								<div class="cell used"></div>
+							</div>
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<div style="width: 84px;">This website doesn't collect & use your data in this way.</div>
+								<div style="width: 84px;">By default, this website doesn't collect & use your data in this way, unless you opt in.</div>
+								<div style="width: 84px;">By default, this website collects & uses your data in this way, unless you opt out.</div>
+								<div style="width: 84px;">This website collects & uses your data in this way.</div>
+							</div>
+							<div class="braces up" style="width: 360px; margin: 0 auto;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- message page -->
+			<div class="flex-col verti-spaced" style="height: 200px;">
+				<b id="message_title" style="font-size: 14px;"></b>
+				<span id="message_body"></span>
+			</div>
+		</div>
+		
+		<div>
+			FUCK
+		</div>
+		
+		<div>
+			FUCK2
+		</div>
+	
+	</div>
+	
+</body>
+</html>
