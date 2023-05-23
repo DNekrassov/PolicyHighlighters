@@ -2,12 +2,12 @@ import logging
 import validators
 from flask import Blueprint, request, jsonify, json
 from PrivacyHighlighter.db_models import Policy, DEFAULT_JSON
-# from PrivacyHighlighter import db
 from PrivacyHighlighter.utils import check_policy_by_url, check_result_json_validity
 from PrivacyHighlighter.chatgpt_integration import chatgpt_policy_request
 
 main = Blueprint('main', __name__)
 
+MSG_ERR_INVALID_ARG = "Invalid arguments passed to the system"
 MSG_ERR_INVALID_URL = "Invalid URL passed to the system"
 MSG_ERR_NO_POLICY_FOUND = "No Privacy Policy was found for this URL in our database"
 MSG_ERR_INVALID_RESULT = "Our system hasn't managed to produce a valid result for the Privacy Policy"
@@ -21,7 +21,15 @@ def default_route():
 
 @main.route("/request")
 def request_route():
-    policy_url = request.args.get('policy_url')  # Should potentially add proofing against non-extension requests?
+    if 'policy_url' not in request.args:
+        return jsonify(response_type="Fail", message=MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
+
+    policy_url = request.args.get('policy_url')
+
+    try:
+        policy_url = str(policy_url)
+    except (TypeError, UnicodeError, AttributeError, RecursionError):
+        return jsonify(response_type="Fail", message=MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
 
     if not validators.url(policy_url):
         return jsonify(response_type="Fail", message=MSG_ERR_INVALID_URL, result_json=DEFAULT_JSON)
