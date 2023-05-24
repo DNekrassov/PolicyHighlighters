@@ -26,18 +26,18 @@ def request_route():
 
     policy_url = request.args.get('policy_url')
 
-    try:
-        policy_url = str(policy_url)
-    except (TypeError, UnicodeError, AttributeError, RecursionError):
-        return jsonify(response_type="Fail", message=MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
-
     if not validators.url(policy_url):
         return jsonify(response_type="Fail", message=MSG_ERR_INVALID_URL, result_json=DEFAULT_JSON)
 
     policy = check_policy_by_url(policy_url)
+
     if not policy or not policy.has_policy:
         return jsonify(response_type="Fail", message=MSG_ERR_NO_POLICY_FOUND, result_json=DEFAULT_JSON)
 
+    if policy.has_result:
+        return jsonify(response_type="Success", message=MSG_SUCCESS, result_json=policy.gpt_result)
+
+    # else, parse result through ChatGPT
     gpt_result = chatgpt_policy_request(policy.policy_text)
 
     if not check_result_json_validity(gpt_result):
@@ -45,4 +45,4 @@ def request_route():
 
     policy.update_gpt_result(gpt_result)
 
-    return jsonify(response_type="Success", message=MSG_SUCCESS, result_json=gpt_result)
+    return jsonify(response_type="Success", message=MSG_SUCCESS, result_json=policy.gpt_result)

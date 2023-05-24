@@ -12,8 +12,6 @@ from PrivacyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSO
 def check_policy_by_url(policy_url):
     policy_url = canonical_url(policy_url)  # normalizing url
     policy = Policy.query.filter_by(url=policy_url).first()
-    # expr = '%{0}%'.format(policy_url)
-    # policy = Policy.query.filter(Policy.url.like(expr)).first()  # querying url in cache
     if policy is None or not policy.has_policy:
 
         in_internal_db, policy_text = check_internal_policy_DB(policy_url)
