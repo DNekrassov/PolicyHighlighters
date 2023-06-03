@@ -1,5 +1,6 @@
 import json
 import glob
+import re
 from w3lib.url import url_query_cleaner
 from url_normalize import url_normalize
 from werkzeug.serving import is_running_from_reloader
@@ -22,6 +23,9 @@ def check_policy_by_url(policy_url):
         if policy is None:  # found in internal db
             policy = Policy(url=policy_url)
             db.session.add(policy)
+
+        # FUTURE TODO: Need to deal with sanitizing the text
+        # policy_text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", policy_text)
 
         policy.update_policy_text(policy_text)
 
