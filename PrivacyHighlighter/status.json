@@ -1,0 +1,45 @@
+{
+  "status": [
+    {
+      "id": 0,
+      "code": "MSG_SUCCESS",
+      "message": "Successful ChatGPT response",
+      "response_type": "Success"
+    },
+    {
+      "id": 1,
+      "code": "MSG_ERR_INVALID_ARG",
+      "message": "Invalid arguments passed to the system",
+      "response_type": "Fail"
+    },
+    {
+      "id": 2,
+      "code": "MSG_ERR_INVALID_URL",
+      "message": "Invalid URL passed to the system",
+      "response_type": "Fail"
+    },
+    {
+      "id": 3,
+      "code": "MSG_ERR_NO_POLICY_FOUND",
+      "message": "No Privacy Policy was found for this URL in our database",
+      "response_type": "Fail"
+    },
+    {
+      "id": 4,
+      "code": "MSG_ERR_INVALID_RESULT",
+      "message": "Our system hasn't managed to produce a valid result for the Privacy Policy",
+      "response_type": "Fail"
+    },
+    {
+      "id": 5,
+      "code": "MSG_IN_PROCESS",
+      "message": "Our system is still calculating the result, please wait a while",
+      "response_type": "Fail"
+    },
+    {
+      "id": -999,
+      "code": "",
+      "message": ""
+    }
+  ]
+}
