@@ -1,6 +1,8 @@
 import json
 import glob
 import re
+
+import flask
 from w3lib.url import url_query_cleaner
 from url_normalize import url_normalize
 from werkzeug.serving import is_running_from_reloader
@@ -116,3 +118,9 @@ def load_priva_data(file_num=-1):
             priva_columns = ('hash', 'text')
             db.session.add(Priva(**{k: obj[k] for k in priva_columns if k in obj}))
         db.session.commit()
+
+
+def response_jsonify(message, result_json):
+    response = flask.jsonify(message=Status.MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
+    response.headers.add('Access-Control-Allow-Origin', '*')
+    return response
