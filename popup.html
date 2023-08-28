@@ -1,0 +1,581 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Policy Highlighters</title>
+	
+	<style>
+		/* fonts from goodle fonts :3 */
+/*		@font-face { font-family: shoulders; src: url('Big_Shoulders_Text/static/BigShouldersText-Black.ttf'); } */
+/*		@font-face { font-family: goldman; src: url('Goldman/Goldman-Regular.ttf'); } */
+/*		@font-face { font-family: odibeesan; src: url('Odibee_Sans/OdibeeSans-Regular.ttf'); } */
+/*		@font-face { font-family: wallpoet; src: url('Wallpoet/Wallpoet-Regular.ttf'); } */
+		@font-face { font-family: coda; src: url('Coda/Coda-Regular.ttf'); } 
+		html, body {
+			margin: 0;
+		}
+		body {
+			color: #f0f0f0;
+			background-color: #202020;
+			border: 1px solid #505050;
+			font-size: 10px;
+			font-family: coda /*sans-serif*/;
+		}
+		*, *:before, *:after { box-sizing: border-box; }
+		button {
+			color: inherit;
+			background-color: inherit;
+			font: inherit;
+			border: 0;
+			padding: 0;
+			margin: 0;
+			cursor: pointer;
+		}
+		style, script, .hidden {
+			display: none !important;
+		}
+		
+		
+		label {
+			cursor: pointer;
+		}
+		.radio {
+			display: inline-block;
+			height: 14px;
+			width: 14px;
+			border-radius: 7px;
+			border-width: 1px;
+			border-style: solid;
+		}
+		input[type=radio]:checked + .radio:before {
+			content: "";
+			display: block;
+			height: 4px;
+			width: 4px;
+			border-width: 2px;
+			border-style: solid;
+			border-radius: 2px;
+			margin: 4px;
+		}
+		
+		:has(> input[type=radio]:not(:checked)) + #threshold_selector {
+			opacity: 0.5;
+		}
+		:has(> input[type=radio]:not(:checked)) + #threshold_selector:after {
+			content: "";
+			display: block;
+			position: absolute;
+			top: 0;
+			left: 0;
+			height: 100%;
+			width: 100%;
+			visibility: none;
+		}
+		
+		.big-font { font-size: 14px; }
+		.dim { color: #b0b0b0; }
+		.trans, .trans:before, .trans:after { transition: 0.2s; }
+		
+		.flex-row, .flex-col {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.flex-row { flex-direction: row; }
+		.flex-col { flex-direction: column; }
+		.verti-spaced > *:not(:last-child) { margin-bottom: 16px; }
+		.horiz-spaced > *:not(:last-child) { margin-right: 16px; }
+		
+		/*.hover-highlight {
+			height: 100%;
+			width: 100%;
+			position: absolute;
+			top: 0;
+			left: 0;
+			background-color: #ffffff;
+			opacity: 0;
+			cursor:	pointer;
+		}
+		.hover-highlight:hover { opacity: 0.2; }*/
+		.hover-highlight:hover {
+			cursor: pointer;
+			/* the only way i could find to increase brightness while
+			preserving the color */
+			filter: invert(1) brightness(0.75) invert(1);
+			
+/*			filter: drop-shadow(0 0 1px);*/
+		}
+		
+		.wings, .braces {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		
+		.wings:before, .wings:after, .braces:before, .braces:after {
+			content: "";
+			flex: 1;
+			border-color: #b0b0b0;
+			border-style: solid;
+			border-width: 1px 0 0;
+			margin-top: 0.5lh;
+			align-self: flex-start;
+		}
+		.wings:before, .braces:before {
+			border-width: 1px 0 0 1px;
+			transform: skew(-45deg);
+		}
+		.wings:after, .braces:after {
+			border-width: 1px 1px 0 0;
+			transform: skew(45deg);
+		}
+		
+		.wings.up:before, .wings.up:after, .braces.up:before, .braces.up:after {
+			margin-bottom: 0.5lh;
+			align-self: flex-end;
+		}
+		.wings.up:before, .braces.up:before {
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg);
+		}
+		.wings.up:after, .braces.up:after {
+			border-width: 0 1px 1px 0;
+			transform: skew(-45deg);
+		}
+		
+		.wings:before, .wings:after {
+			height: 1px;
+		}
+		.wings:before { margin-left: 0; margin-right: 6px; }
+		.wings:after { margin-left: 6px; margin-right: 0; }
+		
+		.braces:before, .braces:after {
+			height: 0.5lh;
+		}
+		.braces:before { margin-left: 0.25lh; margin-right: calc(6px + 0.25lh); }
+		.braces:after { margin-left: calc(6px + 0.25lh); margin-right: 0.25lh; }
+		
+		
+		.braces:empty {
+			height: 1lh;
+		}
+		.braces:empty:before {
+			margin-right: 0;
+		}
+		.braces:empty:after {
+			margin-left: 0;
+		}
+		
+		/*
+		 _____
+		|    /| old style: the center of rotation (marked x) makes 
+		| _x| | the rotation looks unnatural, cuz it's not the arrow's
+		|/____| center of mass.
+		 ________
+		|    /|  | new style: we pad the arrow to shift the center of
+		| __| |  | rotation to the center of mass.
+		|/___x|  | the arrow = the :before element = the inner square
+		|________| the element itself = the arrow box + the "padding".
+		*/
+		.arrow {
+			height: 9px; 
+			width: 9px; 
+			display: inline-block;
+			vertical-align: middle;
+			rotate: 45deg;
+		}
+		.arrow:before {
+			content: "";
+			display: block;
+			height: 6px; 
+			width: 6px; 
+			border-top: 2px solid transparent;
+			border-left: 2px solid transparent;
+			border-bottom: 2px solid #b0b0b0;
+			border-right: 2px solid #b0b0b0;
+		}
+		.arrow.up { rotate: -135deg; }
+		
+		
+		.menu-item {
+			font-weight: bold;
+			color: #b0b0b0;
+			justify-content: center;
+			text-align: center;
+			width: 60px;
+			padding: 16px 8px;
+			margin-left: 8px;
+			position: relative;
+		}
+		.menu-item:hover, .menu-item.selected {
+			color: #f0f0f0;
+		}
+		/*.menu-item.selected {
+			border-image: linear-gradient(#f6b73c, #4d9f0c) 30;
+			border-width: 0 0 4px;
+			border-style: solid;
+		}*/
+		.menu-item.selected:after {
+			content: "";
+			display: block;
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			height: 10px;
+			width: inherit;
+			background: linear-gradient(#80c0ff00, #80c0ff);
+		}
+		
+		
+		#pages > * {
+			padding: 16px 16px 16px;
+			background: linear-gradient(#505050, #202020 80px);
+		}
+		#tables {
+			display: flex;
+			flex-direction: row;
+		}
+		#tables > *:not(:last-child) {
+			margin-right: 10px;
+		}
+		.table > *:not(:last-child) {
+			margin-bottom: 4px;
+		}
+		.row {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		.row > *:not(:last-child) {
+			margin-right: 4px;
+		}
+		.cell, .grade, #clear_cache {
+			border-width: 1px;
+			border-style: solid;
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+		.cell {
+			height: 30px;
+			width: 60px;
+		}
+		.grade {
+			padding: 0 8px;
+			height: 26px;
+			width: 60px;
+			border-radius: 13px;
+		}
+		.grade:before {
+			font-weight: bolder;
+			font-size: 12px;
+		}
+		
+		.cell.header {
+			border-width: 0px;
+			font-weight: bold;
+		}
+		
+		
+		
+		
+		
+		.cell.unused,
+		.grade.a,
+		#clear_cache,
+		.radio,
+		.radio:before,
+		label input[type=radio] + .radio,
+		label input[type=radio] + .radio:before {
+			box-shadow: 0 0 6px 2px #80c0ff40;
+			background-color: #80c0ff40;
+			border-color: #80c0ff;
+			color: #80c0ff;
+		}
+		#clear_cache {
+			transition:
+				box-shadow 0.5s linear,
+				background-color 0.5s linear,
+				border-color 0.5s linear,
+				color 0.5s linear;
+		}
+		#clear_cache .clear_cache_progress {
+			background-color: #80c0ff40;
+		}
+		#clear_cache:not(.held):hover {
+			filter: invert(1) brightness(0.7) invert(1);
+		}
+		
+		.cell.opt-in,
+		.grade.b,
+		.radio:hover,
+		.radio:hover:before,
+		label:hover input[type=radio] + .radio,
+		label:hover input[type=radio] + .radio:before {
+			box-shadow: 0 0 6px 2px #a0e0ff40;
+			background-color: #a0e0ff40;
+			border-color: #a0d0ff;
+			color: #a0d0ff;
+		}
+		
+		
+		.cell.opt-out, .grade.c {
+			box-shadow: 0 0 6px 2px #ff700040;
+			background-color: #ff700040;
+			border-color: #ffb040;
+			color: #ffb040;
+		}
+		.cell.used,
+		.grade.d,
+		#clear_cache.held {
+			box-shadow: 0 0 6px 2px #ff000040;
+			background-color: #ff000040;
+			border-color: #ff4040;
+			color: #ff4040;
+		}
+		#clear_cache.held .clear_cache_progress {
+			background-color: #ff000040;
+		}
+		/*.grade.e {
+			box-shadow: 0 0 6px 2px #00ff0040;
+			background-color: #00ff0040;
+			border-color: #40ff40;
+			color: #40ff40;
+		}
+		.grade.f {
+			box-shadow: 0 0 6px 2px #a0ff0040;
+			background-color: #a0ff0040;
+			border-color: #e0ff20;
+			color: #e0ff20;
+		}*/
+		
+		.cell.unused:before { content: "-"; }
+		.cell.opt-in:before { content: "opt in"; }
+		.cell.opt-out:before { content: "opt out"; }
+		.cell.used:before { content: "used"; }
+		
+		.grade:before {
+			display: inline;
+			flex: 1;
+		}
+		.grade.a:before { content: "A"; }
+		.grade.b:before { content: "B"; }
+		.grade.c:before { content: "C"; }
+		.grade.d:before { content: "D"; }
+		.grade.e:before { content: "E"; }
+		.grade.f:before { content: "F"; }
+		
+		.grade:after {
+			content: "";
+			height: 16px;
+			width: 16px;
+			background-size: 16px 16px;
+		}
+		.grade.a:after { background-image: url("icons/icon0.png"); }
+		.grade.b:after { background-image: url("icons/icon1.png"); }
+		.grade.c:after { background-image: url("icons/icon2.png"); }
+		.grade.d:after { background-image: url("icons/icon3.png"); }
+		.grade.e:after { background-image: url("icons/icon3.png"); }
+		.grade.f:after { background-image: url("icons/icon3.png"); }
+		
+	</style>
+	
+	<script src="popup.js"></script>
+	
+</head>
+
+<body>
+	
+	<div class="flex-row" style="
+		height: 60px;
+		padding: 0 16px;
+		background: url(hex.png) #202020;
+		border-bottom: 1px solid #b0b0b0;">
+		
+		<span style="flex: 1; font-size: 18px; font-weight: bold;">
+			Policy Highlighter
+		</span>
+		
+		<div id="menu" style="align-self: flex-end;">
+			<button class="menu-item">Summary</button>
+			<button class="menu-item">Settings</button>
+			<button class="menu-item">About</button>
+			<!-- <div id="selection_highlighter" style="position: absolute; bottom: 0;"></div> -->
+		</div>
+		
+		<!-- Top-Right Fancy Corner(TM) -->
+		<div style="position: absolute;
+			height: 16px; width: 220px;
+			top: 0; right: -20px;
+			background-color: #404040;
+			border-color: #b0b0b0; border-style: solid;
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg)">
+		</div>
+		
+	</div>
+	
+	<div id="pages" style="width: 500px;">
+		
+		<div id="summary_pages">
+			
+			<!-- table page -->
+			<div class="flex-col verti-spaced">
+				
+				<div class="flex-row" style="width: 340px; text-align: center;">
+					<b style="margin-right: 10px; font-size: 12px;">Policy grade:</b>
+					<div id="grade" class="grade a"></div>
+				</div>
+				
+				<div id="tables">
+					<div class="table">
+						<!-- dummy elements to take up the brace row and
+							header cell row just like tables 1 and 2 -->
+						<div class="row wings" style="opacity: 0;">0</div>
+						<div class="row">
+							<div class="cell header"></div>
+						</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Internally used</div>
+						<div class="row">
+							<div class="cell header">Service</div>
+							<div class="cell header">Maintenance</div>
+							<div class="cell header">Marketing</div>
+							<div class="cell header">Profiling</div>
+						</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Shared</div>
+						<div class="row">
+							<div class="cell header">Other companies</div>
+							<div class="cell header">Public forums</div>
+						</div>
+					</div>
+				</div>
+				
+				<div class="dim" style="width: 340px; text-align: center;">
+					<b>Uncollected data:</b> <span id="unused"></span>
+				</div>
+				
+				<!-- a wrapper for the legend button & box, to not add a space after the button -->
+				<div class="flex-col">
+					<button id="legend_button" class="dim wings braces" style="width: 360px;">
+						<b>Legend</b>
+						<div id="legend_arrow" class="arrow up" style="margin-left: 5px;"></div>
+					</button>
+					
+					<!-- a wrapper to make the legend stick to the bottom (flex-end) of the box,
+						so overflow crops it at the top (to make the bottom brace drop instead of reveal) -->
+					<div id="legend_box" class="flex-row" style="width: 400px; overflow: hidden; text-align: center;">
+						<div class="dim flex-col verti-spaced" style="align-self: flex-end; align-items: stretch;">
+							<div style="height: 0;"></div> <!-- a dummy to force padding -->
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<div class="cell unused"></div>
+								<div class="cell opt-in"></div>
+								<div class="cell opt-out"></div>
+								<div class="cell used"></div>
+							</div>
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<div style="width: 80px;">This website doesn't use your data this way.</div>
+								<div style="width: 80px;">By default, this website doesn't use your data this way, unless you opt in.</div>
+								<div style="width: 80px;">By default, this website uses your data this way, unless you opt out.</div>
+								<div style="width: 80px;">This website uses your data this way.</div>
+							</div>
+							<div class="braces up" style="width: 360px; margin: 0 auto;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- message page -->
+			<div class="flex-col verti-spaced" style="height: 200px;">
+				<b id="message_title" class="big-font"></b>
+				<span id="message_body"></span>
+			</div>
+		</div>
+		
+		<div style="font-size: 12px;">
+			<form class="col-flex verti-spaced" style="align-items: start;">
+				<div class="big-font" style="font-weight: bold;">
+					Open this pop-up automatically when you visit new websites
+				</div>
+				
+				<label class="flex-row" style="justify-content: left; margin-left: 16px;">
+					<input type="radio" name="open" value="always" class="hidden" />
+					<div class="radio" style="margin-right: 10px;"></div>
+					Always
+				</label>
+				
+				<label class="flex-row" style="justify-content: left; margin-left: 16px;">
+					<input type="radio" name="open" value="never" class="hidden" />
+					<div class="radio" style="margin-right: 10px;"></div>
+					Never
+				</label>
+				
+				<label class="flex-row" style="justify-content: left; margin-left: 16px;">
+					<input type="radio" name="open" value="grade" class="hidden" />
+					<div class="radio" style="margin-right: 10px;"></div>
+					Only when the policy grade is lower or equal to:
+				</label>
+				
+				<div id="threshold_selector" class="flex-row horiz-spaced" style="position: relative;">
+					<label class="flex-col">
+						<div class="grade a" style="margin-bottom: 10px;"></div>
+						<input type="radio" name="threshold" value="a" class="hidden" />
+						<div class="radio"></div>
+					</label>
+					<label class="flex-col">
+						<div class="grade b" style="margin-bottom: 10px;"></div>
+						<input type="radio" name="threshold" value="b" class="hidden" />
+						<div class="radio"></div>
+					</label>
+					<label class="flex-col">
+						<div class="grade c" style="margin-bottom: 10px;"></div>
+						<input type="radio" name="threshold" value="c" class="hidden" />
+						<div class="radio"></div>
+					</label>
+					<label class="flex-col">
+						<div class="grade d" style="margin-bottom: 10px;"></div>
+						<input type="radio" name="threshold" value="d" class="hidden" />
+						<div class="radio"></div>
+					</label>
+				</div>
+			</form>
+			
+			<div class="col-flex verti-spaced" style="align-items: start;">
+				<div class="big-font" style="font-weight: bold;">
+					Clear policy summary cache
+				</div>
+				The cache remembers which websites you have visited and their policy summaries.
+				Clear it to load up-to-date summaries for the websites you visit.
+				<button id="clear_cache" style="height: 60px; width: 100px; border-radius: 10px; overflow: hidden; flex-direction: column; position: relative;">
+					<div style="flex: 1;">
+						<div id="clear_cache_progress_cont" style="height: 100%; width: 100%;"></div>
+						<div class="flex-col" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%;">
+							<span class="big-font" style="font-weight: bolder;">CLEAR CACHE</span>
+							<span id="clear_cache_time" style="font-size: 10px;"></span>
+						</div>
+					</div>
+				</button>
+				<span id="cache_cleared_message" style="font-size: 10px; opacity: 0;">Cache cleared!</span>
+			</div>
+		</div>
+		
+		<div>
+			Hi there!
+			We're a group of 3 students (...).
+			We created this extension for a security and privacy
+			usability class, in effort to increase accessibility of
+			privacy policies to raise awareness to them.
+			Icon credit: <a href="https://www.flaticon.com/free-icons/marker" title="marker icons">Marker icons created by Freepik - Flaticon</a>
+			Font credit:
+			Preliminary works:
+			Github link: https://github.com/DNekrassov/PrivacyHighlighters
+		</div>
+	
+	</div>
+	
+</body>
+</html>

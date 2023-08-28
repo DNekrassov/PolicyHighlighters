@@ -1,0 +1,38 @@
+{
+	"manifest_version": 3,
+	"name": "Policy Highlighter",
+	"description": "Presents websites' privacy policy as a short, readable table.",
+	"version": "0.0.1",
+	
+	"icons": {
+		"32": "icons/icon_default32.png",
+		"256": "icons/icon_default256.png"
+	},
+	
+	"permissions": [
+		// popup
+		"activeTab",
+		
+		// background
+		"tabs",
+		"storage",
+		
+		// remove these later
+		"scripting",
+		"webNavigation"
+	],
+	
+	"action": {
+		"default_popup": "popup.html"
+	},
+	
+	"background": {
+		"service_worker": "background.js"
+	}
+	
+	// "content_scripts": [{
+	// 	"matches": ["<all_urls>"],
+	// 	"css": ["style.css"],
+	// 	"js": ["main.js"]
+	// }]
+}
