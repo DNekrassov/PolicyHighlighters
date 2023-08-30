@@ -9,7 +9,9 @@ class Policy(db.Model):
     policy_text = db.Column(db.UnicodeText, nullable=False, default="")
     has_result = db.Column(db.Boolean, default=False)
     gpt_result = db.Column(db.JSON, nullable=True, default=DEFAULT_JSON)
-    test = db.Column(db.Boolean, default=True)  # We'll change the default to False once we start doing real stuff
+    #test = db.Column(db.Boolean, default=True)  # We'll change the default to False once we start doing real stuff
+    timestamp = db.Column(db.String, nullable=False)
+    probability = db.Column(db.Float, nullable=False)
 
     def __init__(self, **kwargs):
         super(Policy, self).__init__(**kwargs)
@@ -33,6 +35,8 @@ class Meta(db.Model):
     url = db.Column(db.String, unique=True, nullable=False)
     file_path = db.Column(db.Integer, nullable=False)
     hash = db.Column(db.String, unique=True, nullable=False, primary_key=True)
+    timestamp = db.Column(db.String, nullable=False)
+    probability = db.Column(db.Float, nullable=False)
 
 
 class Priva(db.Model):
