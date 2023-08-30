@@ -17,7 +17,7 @@ def check_policy_by_url(policy_url):
         policy = Policy.query.filter_by(url=policy_url).first()
         if policy is None or not policy.has_policy:
 
-            in_internal_db, policy_text = check_internal_policy_DB(policy_url)
+            in_internal_db, policy_text, meta_entry = check_internal_policy_DB(policy_url)
 
             if not in_internal_db:
                 continue
@@ -30,6 +30,7 @@ def check_policy_by_url(policy_url):
             # policy_text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", policy_text)
 
             policy.update_policy_text(policy_text)
+            policy.update_meta_info(meta_entry.timestamp, meta_entry.probability)
 
             db.session.commit()
 
@@ -97,7 +98,7 @@ def check_internal_policy_DB(policy_url):
     expr = '%{0}%'.format(policy_url)
     meta_entry = Meta.query.filter(Meta.url.like(expr)).first()
     if meta_entry is None:
-        return False, ""
+        return False, "", None
 
     policy_hash, file_num = meta_entry.hash, meta_entry.file_path
 
@@ -108,8 +109,8 @@ def check_internal_policy_DB(policy_url):
         priva_entry = Priva.query.filter_by(hash=policy_hash).first()
         if priva_entry is None:  # SHOULD NEVER HAPPEN, since we loaded the new file
             print("!!!!!!!!!! FOUND IN METADATA BUT NOT IN PRIVA.DB !!!!!!!!!!")
-            return False, ""
-    return True, priva_entry.text
+            return False, "", meta_entry
+    return True, priva_entry.text, meta_entry
 
 
 def load_priva_data(file_num=-1):

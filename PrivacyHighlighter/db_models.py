@@ -24,6 +24,10 @@ class Policy(db.Model):
         self.policy_text = text
         self.has_policy = (self.policy_text != "")
 
+    def update_meta_info(self, timestamp, probability):
+        self.timestamp = timestamp
+        self.probability = probability
+
     def update_gpt_result(self, result):
         self.gpt_result = result
         self.has_result = (self.gpt_result != DEFAULT_JSON)
