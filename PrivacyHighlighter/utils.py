@@ -12,27 +12,28 @@ from PrivacyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSO
 
 
 def check_policy_by_url(policy_url):
-    policy_url = canonical_url(policy_url)  # normalizing url
-    policy = Policy.query.filter_by(url=policy_url).first()
-    if policy is None or not policy.has_policy:
+    policy_url_list = canonical_url(policy_url)  # normalizing url
+    for policy_url in policy_url_list:
+        policy = Policy.query.filter_by(url=policy_url).first()
+        if policy is None or not policy.has_policy:
 
-        in_internal_db, policy_text = check_internal_policy_DB(policy_url)
+            in_internal_db, policy_text = check_internal_policy_DB(policy_url)
 
-        if not in_internal_db:
-            return None
+            if not in_internal_db:
+                continue
 
-        if policy is None:  # found in internal db
-            policy = Policy(url=policy_url)
-            db.session.add(policy)
+            if policy is None:  # found in internal db
+                policy = Policy(url=policy_url)
+                db.session.add(policy)
 
-        # FUTURE TODO: Need to deal with sanitizing the text
-        # policy_text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", policy_text)
+            # FUTURE TODO: Need to deal with sanitizing the text
+            # policy_text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", policy_text)
 
-        policy.update_policy_text(policy_text)
+            policy.update_policy_text(policy_text)
 
-        db.session.commit()
+            db.session.commit()
 
-    return policy
+        return policy
 
 
 def load_meta_data():
