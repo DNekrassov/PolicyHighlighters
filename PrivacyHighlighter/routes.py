@@ -2,7 +2,7 @@ import logging
 import validators
 from flask import Blueprint, request, jsonify, json
 from PrivacyHighlighter.db_models import Policy, DEFAULT_JSON
-from PrivacyHighlighter.utils import check_policy_by_url, check_result_json_validity
+from PrivacyHighlighter.utils import check_policy_by_url, check_result_json_validity, response_jsonify
 from PrivacyHighlighter.chatgpt_integration import chatgpt_policy_request
 from PrivacyHighlighter.status import Status
 

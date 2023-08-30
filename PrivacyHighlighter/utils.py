@@ -9,6 +9,7 @@ from werkzeug.serving import is_running_from_reloader
 from PrivacyHighlighter.db_models import Policy, Meta, Priva
 from PrivacyHighlighter import db
 from PrivacyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSON
+from PrivacyHighlighter.status import Status
 
 
 def check_policy_by_url(policy_url):
@@ -133,6 +134,6 @@ def load_priva_data(file_num=-1):
 
 
 def response_jsonify(message, result_json):
-    response = flask.jsonify(message=Status.MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
+    response = flask.jsonify(message=message, result_json=result_json)
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
