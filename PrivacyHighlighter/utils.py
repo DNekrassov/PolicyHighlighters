@@ -3,8 +3,7 @@ import glob
 import re
 
 import flask
-from w3lib.url import url_query_cleaner
-from url_normalize import url_normalize
+import tldextract
 from werkzeug.serving import is_running_from_reloader
 
 from PrivacyHighlighter.db_models import Policy, Meta, Priva
@@ -50,7 +49,7 @@ def load_meta_data():
 
     for json_str in json_list:
         obj = json.loads(json_str)
-        meta_columns = ('url', 'file_path', 'hash')
+        meta_columns = ('url', 'file_path', 'hash', 'timestamp', 'probability')
         db.session.add(Meta(**{k: obj[k] for k in meta_columns if k in obj}))
 
     db.session.commit()
@@ -68,18 +67,29 @@ def check_result_json_validity(result_json):
 # Internal util functions
 # ---------------------------------------------
 def canonical_url(u):
-    u = url_normalize(u)
-    u = url_query_cleaner(u, parameterlist=['utm_source', 'utm_medium', 'utm_campaign', 'utm_term', 'utm_content'], remove=True)
+    extract = tldextract.extract(u)
+    domain = ".".join([extract.domain, extract.suffix])
+    subdomain = extract.subdomain
 
-    if u.startswith("http://"):
-        u = u[7:]
-    if u.startswith("https://"):
-        u = u[8:]
-    if u.startswith("www."):
-        u = u[4:]
-    if u.endswith("/"):
-        u = u[:-1]
-    return u
+    if subdomain == "www":
+        subdomain = ""
+
+    if subdomain.startswith("www."):
+        subdomain = subdomain[4:]
+
+    #recursively building subdomain list: e.g.: forums.news.cnn.com -> news.cnn.com -> cnn.com
+    if subdomain == "":
+        return [domain]
+    full_subdomain = ".".join([subdomain, domain])
+    lst = [full_subdomain]
+    subdomain_count = subdomain.count('.')
+    name = full_subdomain
+    for i in range(subdomain_count + 1):
+        name = ".".join(name.split(".")[1:])
+        lst.append(name)
+
+    return lst
+
 
 
 def check_internal_policy_DB(policy_url):
