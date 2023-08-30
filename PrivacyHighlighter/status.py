@@ -1,6 +1,6 @@
 from enum import Enum
 
-class Status(Enum):
+class Status(str, Enum):
     MSG_SUCCESS = 0
     MSG_ERR_INVALID_ARG = 1
     MSG_ERR_INVALID_URL = 2
