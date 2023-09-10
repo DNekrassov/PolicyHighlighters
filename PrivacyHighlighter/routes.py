@@ -17,27 +17,27 @@ def default_route():
 @main.route("/request")
 def request_route():
     if 'policy_url' not in request.args:
-        return response_jsonify(message=Status.MSG_ERR_INVALID_ARG, result_json=DEFAULT_JSON)
+        return response_jsonify(message=Status.MSG_ERR_INVALID_ARG, table=DEFAULT_JSON)
 
     policy_url = request.args.get('policy_url')
 
     if not validators.url(policy_url):
-        return response_jsonify(message=Status.MSG_ERR_INVALID_URL, result_json=DEFAULT_JSON)
+        return response_jsonify(message=Status.MSG_ERR_INVALID_URL, table=DEFAULT_JSON)
 
     policy = check_policy_by_url(policy_url)
 
     if not policy or not policy.has_policy:
-        return response_jsonify(message=Status.MSG_ERR_NO_POLICY_FOUND, result_json=DEFAULT_JSON)
+        return response_jsonify(message=Status.MSG_ERR_NO_POLICY_FOUND, table=DEFAULT_JSON)
 
     if policy.has_result:
-        return response_jsonify(message=Status.MSG_SUCCESS, result_json=policy.gpt_result)
+        return response_jsonify(message=Status.MSG_SUCCESS, table=policy.gpt_result, policy=policy)
 
     # else, parse result through ChatGPT
     gpt_result = chatgpt_policy_request(policy.policy_text)
 
     if not check_result_json_validity(gpt_result):
-        return response_jsonify(message=Status.MSG_ERR_INVALID_RESULT, result_json=DEFAULT_JSON)
+        return response_jsonify(message=Status.MSG_ERR_INVALID_RESULT, table=DEFAULT_JSON, policy=policy)
 
     policy.update_gpt_result(gpt_result)
 
-    return response_jsonify(message=Status.MSG_SUCCESS, result_json=policy.gpt_result)
+    return response_jsonify(message=Status.MSG_SUCCESS, table=policy.gpt_result, policy=policy)

@@ -121,7 +121,6 @@ def load_priva_data(file_num=-1):
         filepath = PRIVA_FILEPATH + "/" + str(file_num) + ".json"
         priva_files = [filepath]
 
-    print(priva_files)
     for file in priva_files:
         with open(file, 'r') as json_file:
             json_list = list(json_file)
@@ -133,7 +132,10 @@ def load_priva_data(file_num=-1):
         db.session.commit()
 
 
-def response_jsonify(message, result_json):
-    response = flask.jsonify(message=message, result_json=result_json)
+def response_jsonify(message, table, policy=None):
+    if policy is None:
+        response = flask.jsonify(table=table, code=int(message))
+    else:
+        response = flask.jsonify(table=table, code=int(message), domain=policy.url, creation_time=policy.timestamp, confidence=policy.probability)
     response.headers.add('Access-Control-Allow-Origin', '*')
     return response
