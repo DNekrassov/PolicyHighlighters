@@ -1,4 +1,4 @@
-from PrivacyHighlighter import create_app
+from PolicyHighlighter import create_app
 
 app = create_app()
 

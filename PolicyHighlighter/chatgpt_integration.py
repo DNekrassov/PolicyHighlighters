@@ -1,6 +1,6 @@
 import openai
-from PrivacyHighlighter.credentials import api_key
-from PrivacyHighlighter.config import DEFAULT_JSON
+from PolicyHighlighter.credentials import api_key
+from PolicyHighlighter.config import DEFAULT_JSON
 from flask import jsonify
 
 openai.api_key = api_key

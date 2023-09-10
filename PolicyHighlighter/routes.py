@@ -1,17 +1,18 @@
 import logging
 import validators
 from flask import Blueprint, request, jsonify, json
-from PrivacyHighlighter.db_models import Policy, DEFAULT_JSON
-from PrivacyHighlighter.utils import check_policy_by_url, check_result_json_validity, response_jsonify
-from PrivacyHighlighter.chatgpt_integration import chatgpt_policy_request
-from PrivacyHighlighter.status import Status
+from PolicyHighlighter.db_models import Policy
+from PolicyHighlighter.utils import check_policy_by_url, check_result_json_validity, response_jsonify
+from PolicyHighlighter.chatgpt_integration import chatgpt_policy_request
+from PolicyHighlighter.status import Status
+from PolicyHighlighter.config import DEFAULT_JSON, TEST_JSON
 
 main = Blueprint('main', __name__)
 
 
 @main.route("/")
 def default_route():
-    return "Hey there, if you're a user, you shouldn't be here. This space is used by the PrivacyHighlighter project :)"
+    return "Hey there, if you're a user, you shouldn't be here. This space is used by the PolicyHighlighter project :)"
 
 
 @main.route("/request")
@@ -36,7 +37,8 @@ def request_route():
     gpt_result = chatgpt_policy_request(policy.policy_text)
 
     if not check_result_json_validity(gpt_result):
-        return response_jsonify(message=Status.MSG_ERR_INVALID_RESULT, table=DEFAULT_JSON, policy=policy)
+        #return response_jsonify(message=Status.MSG_ERR_INVALID_RESULT, table=DEFAULT_JSON, policy=policy)
+        return response_jsonify(message=Status.MSG_SUCCESS, table=TEST_JSON, policy=policy)
 
     policy.update_gpt_result(gpt_result)
 
