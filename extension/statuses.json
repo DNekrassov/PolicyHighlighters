@@ -1,0 +1,51 @@
+{
+  "statuses": [
+    {
+      "code": 0,
+      "name": "MSG_SUCCESS",
+      "cache": true,
+      "update_all_tabs": true
+    },
+    {
+      "code": 1,
+      "name": "MSG_ERR_INVALID_ARG",
+      "title": "Bad request arguments",
+      "body": "Invalid arguments were passed to the system",
+      "cache": false,
+      "update_all_tabs": true,
+      "icon": "error"
+    },
+    {
+      "code": 2,
+      "name": "Bad request domain",
+      "title": "Extension error",
+      "body": "Invalid domain was passed to the system",
+      "cache": false,
+      "update_all_tabs": true,
+      "icon": "error"
+    },
+    {
+      "code": 3,
+      "name": "MSG_ERR_NO_POLICY_FOUND",
+      "title": "Policy not found",
+      "body": "No privacy policy for this domain was found in our database",
+      "cache": true,
+      "update_all_tabs": true,
+      "icon": "error"
+    },
+    {
+      "code": 4,
+      "name": "MSG_ERR_INVALID_RESULT",
+      "title": "Policy can't be summarized",
+      "body": "Our system couldn't produce a valid summary for the privacy policy",
+      "cache": true,
+      "update_all_tabs": true,
+      "icon": "error"
+    },
+    {
+      "code": 5,
+      "name": "MSG_IN_PROCESS",
+      "retry": true
+    }
+  ]
+}
