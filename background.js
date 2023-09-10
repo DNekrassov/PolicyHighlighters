@@ -1,58 +1,52 @@
+importScripts('./common.js');
+
 var Defs = {
-	// to be read from statuses.json
-	STATUSES: [],
-	
-	ROW_ORDER: [
-		"Contact info",
-		"Cookies",
-		"Preferences",
-		"Purchases",
-		"Activity"
-	],
-	
-	VALUE_WEIGHTS: {
-		'unused': 0,
-		'opt-in': 0,
-		'opt-out': 0.7,
-		'used': 0.7,
-	},
-	
-	get_grade(response_json) {
-		var table = response_json.table;
-		var rows = Object.values(table);
-		
-		var sum = 0;
-		for (let row of rows)
-			for (let val of row)
-				sum += this.WEIGHTS[val];
-		
-		var grade = sum / (rows.length * 6);
-		
-		var grade_id = (
-			grade > 0.7 ? 3 :
-			grade > 0.5 ? 2 :
-			grade > 0.2 ? 1 :
-			0
-		);
-		
-		grade_id = _COUNTER < 1 ? 0 : 3;
-		_COUNTER++;
-		return grade_id;
-	},
-	
-	INVALID_RESPONSE: {
-		"table": {
-			"Contact info": ["opt-in", "opt-in", "opt-in", "opt-in", "opt-in", "opt-in"],
-			"Cookies": ["opt-in", "opt-in", "opt-in", "opt-in", "opt-in", "opt-in"],
-			"Preferences": ["opt-in", "opt-in", "opt-in", "opt-in", "opt-in", "opt-in"],
-			"Purchases": ["opt-in", "opt-in", "opt-in", "opt-in", "opt-in", "opt-in"],
-			"Activity": ["opt-in", "opt-in", "opt-in", "opt-in", "opt-in", "opt-in"],
+	statuses: {
+		extension: {
+			MSG_NOT_WEBPAGE: {
+				"name": "MSG_NOT_WEBPAGE",
+				"title": "This is not a webpage",
+				"body": "This tab is not a webpage of a website, so it has no privacy policy.",
+				"cache": false,
+				"update_all_tabs": false,
+				"icon": "ok"
+			},
+			MSG_CONN_TIMEOUT: {
+				"name": "MSG_CONN_TIMEOUT",
+				"title": "Server connection timed out",
+				"body": "We can't connect to the server to get the summary. Check your internet connection or try again later",
+				"cache": false,
+				"update_all_tabs": false,
+				"icon": "error"
+			},
+			MSG_HTTP_ERR(http_code) {
+				return {
+					"name": "MSG_HTTP_ERR",
+					"title": `Server responded with HTTP ${http_code}`,
+					"body": "Please check if the extension is up to date. If the problem persists - please report it to the developers",
+					"cache": false,
+					"update_all_tabs": true,
+					"icon": "error"
+				}
+			},
+			MSG_UNKNOWN_STATUS: {
+				"name": "MSG_UNKNOWN_STATUS",
+				"title": "Server responded with an unknown error status",
+				"body": "While the server was retrieving the privacy policy, it reported an error which we don't have details about. Please check if the extension is up to date.",
+				"cache": false,
+				"update_all_tabs": true,
+				"icon": "error"
+			},
 		},
-		"code": 0
+		// to be read from statuses.json
+		server: new Map()
 	},
 	
 	// 3 days (in seconds)
 	CACHE_EXPIRY: (60 * 60 * 24) * 3,
+	
+	// 5 seconds (in ms)
+	RETRY_DELAY: 5 * 1000,
 	
 	SERVER_ADDR: '127.0.0.1:5000',
 	
@@ -62,28 +56,111 @@ var Defs = {
 		return `http://${this.SERVER_ADDR}/request?policy_url=${domain}`;
 	},
 	
-	get_domain(url_str) {
-		try {
-			var url = new URL(url_str);
-		}
-		catch (e) {
-			return undefined;
-		}
-		
-		if (['https:', 'http:', '', null, undefined].includes(url.protocol))
-			return url.hostname || undefined;
-		else
-			return undefined;
-	},
-	
 	unix_time() {
 		return Math.floor(Date.now() / 1000);
 	},
 	
-	import_json(path) {
-		return fetch(chrome.runtime.getURL(path), {method: 'GET'}).then(
-			response => response.json()
-		);
+	is_res_expired(res_json, settings) {
+		if (res_json.cache_counter != settings['.cache_counter'])
+			return true;
+		else {
+			var now = this.unix_time();
+			return now - res_json.cache_time >= this.CACHE_EXPIRY;
+		}
+	},
+	
+	pack_uint32(num) {
+		var bytes = [];
+		for (let i = 0; i < 4; i++) {
+			bytes.push(num % 0xFF);
+			num = Math.floor(num / 0x100); 
+		}
+		return String.fromCharCode(...bytes);
+	},
+	
+	get_icon_sizes(icon_name) {
+		var sizes = ['256', '128', '48', '16'];
+		var dict = {};
+		for (let size of sizes)
+			dict[size] = `icons/${icon_name}${size}.png`
+		return dict;
+	}
+};
+
+var Notifications = {
+	all: {},
+	
+	should_notify(settings, grade) {
+		var notif_cond = settings['.notif_cond'];
+		var threshold = settings['.threshold'];
+		
+		switch (notif_cond) {
+		case 'always':
+			return true;
+		case 'never':
+			return false;
+		case 'threshold':
+			var grade_num = {'a': 0, 'b': 1, 'c': 2, 'd': 3};
+			return grade_num[threshold] <= grade_num[grade];
+		default:
+			throw new Error("bad value for setting '.notif_cond'");
+		}
+	},
+	
+	create(settings, grade, domain) {
+		return chrome.notifications.create('', {
+			type: 'basic',
+			iconUrl: `icons/${grade}128.png`,
+			title: `New Grade ${grade.toUpperCase()} Policy - Policy Highlighters`,
+			message: `There's a new privacy policy for ${domain}`,
+			// contextMessage: "context!",
+			buttons: [{title: "Go to tab"}],
+			
+			// image: null // image type only
+			// items: null, // list type only
+			// progress: null // progress type only
+			
+			priority: Number(settings['.priority']),
+			silent: settings['.silent'],
+			requireInteraction: false,
+		}).then(notif_id => {
+			Notifications.all[notif_id] = domain;
+		});
+	},
+	
+	init() {
+		chrome.notifications.onButtonClicked.addListener((notif_id, button_index) => {
+			var domain = Notifications.all[notif_id];
+			chrome.notifications.clear(notif_id);
+			
+			// the notification is not for a specific tab, but for a
+			// domain that a tab/tabs have opened, so we just choose
+			// any tab with that domain to show.
+			// of course, the user might have closed all tabs with the
+			// domain by the time they clicked the button, in that case,
+			// we open a new tab with that domain manually.
+			Common.tabs_with_domain(domain).then(tabs => {
+				if (tabs.length)
+					return chrome.tabs.update(tabs[0].id, {
+						active: true
+					});
+				else 
+					return chrome.tabs.create({
+						active: true,
+						url: 'https://' + domain // TODO: add https://? http://?
+					});
+			}).then(tab => {
+				return chrome.windows.update(tab.windowId, {
+					// drawAttention: true,
+					focused: true
+				})
+			});
+			
+		});
+		
+		chrome.notifications.onClosed.addListener((notif_id, by_user) => {
+			delete Notifications.all[notif_id];
+		});
 	}
 };
 
@@ -96,56 +173,48 @@ function TabClient(tab_id, tab) {
 	this.tab = tab;
 }
 
-var _COUNTER = 0;
 Object.assign(TabClient.prototype, {
 	map_name: 'tabs',
 	
-	respond(response_json) {
-		var grade_id = Defs.get_grade(response_json);
-		
-		// var details = {
-		// 	tabId: tab.id,
-		// 	color: '#FFFFFF',
-		// 	text: "!"
-		// };
-		// chrome.action.setBadgeBackgroundColor(details, () => { });
-		// chrome.action.setBadgeText(details, () => { });
-		try {
-			chrome.action.setIcon({
-				tabId: this.tab_id,
-				path: `icons/icon${grade_id}.png`
-			});
-		}
-		catch (e) {
-			// tab doesn't exist? too bad :P
-		}
-		
-		// TODO: chrome.action.openPopup() optional
+	respond(req) {
+		// TODO: can get the weights only once (when fetch() finishes)
+		// and then pass it to all TabClient.respond()'s.
+		// but its gonna oercomplicate the current implementation
+		// and to be frank how many tabs are gonna be waiting for it?
+		// not many lol
+		chrome.action.setIcon({
+			tabId: this.tab_id,
+			path: req.icon
+		})
 	}
 });
 
 Object.assign(TabClient, {
 	init() {
-		// https://stackoverflow.com/questions/26759279/refreshing-an-icon-change-for-chrome-extension
-		// var nav_set_icon = details => {
-		// 	if (details.frameId != 0)
-		// 		return;
-		// 	Tabs.url_switch(details.tabId);
-		// 		chrome.browserAction.setIcon({
-		// 			imageData: iconData,
-		// 			tabId: ,
-		// 		});
-		// };
-		// chrome.webNavigation.onCommitted.addListener(updateIcon);
-		// chrome.webNavigation.onHistoryStateUpdated.addListener(updateIcon);
-		// chrome.webNavigation.onBeforeNavigate.addListener(updateIcon);
+
 		
 		chrome.tabs.onCreated.addListener(tab => {
 			Tabs.url_switch(tab);
 		});
 		chrome.tabs.onUpdated.addListener((tab_id, changed_info, tab) => {
-			if (changed_info.url)
+			// if (changed_info.url)
+			if (changed_info.status == 'complete')
 				Tabs.url_switch(tab);
+			
+			// TODO: cosider
+			// https://stackoverflow.com/questions/26759279/refreshing-an-icon-change-for-chrome-extension
+			// var nav_set_icon = details => {
+			// 	if (details.frameId != 0)
+			// 		return;
+			// 	Tabs.url_switch(details.tabId);
+			// 		chrome.browserAction.setIcon({
+			// 			imageData: iconData,
+			// 			tabId: ,
+			// 		});
+			// };
+			// chrome.webNavigation.onCommitted.addListener(updateIcon);
+			// chrome.webNavigation.onHistoryStateUpdated.addListener(updateIcon);
+			// chrome.webNavigation.onBeforeNavigate.addListener(updateIcon);
 		});
 		
 		chrome.tabs.onRemoved.addListener((tab_id, removed_info) => {
@@ -166,15 +235,12 @@ function PortClient(tab_id, port) {
 Object.assign(PortClient.prototype, {
 	map_name: 'ports',
 	
-	respond(response_json) {
-		var table = response_json.table;
-		
-		var ordered_table = Defs.ROW_ORDER.map(
-			data_name => [data_name, table[data_name]]
-		);
-		
+	respond(req) {
 		try {
-			this.port.postMessage(ordered_table);
+			this.port.postMessage({
+				res_json: req.res_json,
+				status: req.status
+			});
 			this.port.disconnect();
 		}
 		catch (e) {
@@ -189,14 +255,11 @@ Object.assign(PortClient, {
 			port.onMessage.addListener(params => {
 				var port_client = new PortClient(params.tab_id, port);
 				port.onDisconnect.addListener(() => {
-					Tables.cancel(port_client, domain);
+					CarpoolRequest.cancel(port_client, domain);
 				});
 				
-				var domain = Defs.get_domain(params.url);
-				if (domain === undefined)
-					port_client.respond(Defs.INVALID_RESPONSE)
-				else
-					Tables.get(port_client, domain);
+				var domain = Common.get_domain(params.url);
+				CarpoolRequest.get(port_client, domain);
 			})
 		});
 	}
@@ -205,9 +268,41 @@ Object.assign(PortClient, {
 
 
 
+/* TODO: if cache full, implement LRU:
+oldest = []; // will contain K oldest non-expired entries
+go over all keys. for each key:
+	if expired: remove key
+	else:
+		insert key into `oldest` such that it remains
+		sorted by expiration dates.
+		if oldest.length > K: pop out oldest[-1]; 
+remove all keys in `oldest` from cache.
 
-// create a new request to this domain and send it right away.
-// when done, it sends the response to all clients & updates the cache.
+problems:
+*	deletion might be called by following threads, so we
+	need to set up a flag to tell others, and keep them on
+	standby until the deletion is complete.
+*	we don't know how many entries we have to delete, since
+	they're not all the same size: table sizes may have an
+	upper bound, but domain lengths are unlimited...
+	*	idea: use IP addresses for keys? nah this is useless
+
+solution (making peace with it):
+theres a minimal entry size, so if we delete N entries we
+know that we freed at least N * MIN_ENTRY_SIZE bytes.
+we don't care if after the deletion the cache is still too
+full to be added 1 big entry, or if we freed too many
+entries so now it's empty, since the cache is just to
+optimize performance and it won't cause errors!
+cuz if the cache is not functional (can't contain any
+entries or can't store new entries) the implementation still
+uses requests to get the tables.
+	
+idea: on extension initialization, delete all expired keys.
+this shouldn't be so bad right? */
+
+// create a new request to this domain.
+// when done, it sends the response to all clients that requested it.
 function CarpoolRequest(domain) {
 	this.domain = domain;
 	
@@ -216,48 +311,243 @@ function CarpoolRequest(domain) {
 	this.ports = new Map();
 	
 	this.aborter = new AbortController();
+	
+	this.canceled = false;
+	this.done = false;
+	
+	this.status = null;
+	this.res_json = null;
 }
 
 Object.assign(CarpoolRequest.prototype, {
-	respond_all() {
-		for (let [tab_id, tab_client] of this.tabs)
-			tab_client.respond(this.response_json);
-		
-		for (let [tab_id, port_client] of this.ports)
-			port_client.respond(this.response_json);
+	matrixfy_table() {
+		var self = this;
+		this.res_json.table = Common.row_order.map(
+			row => Common.col_order.map(
+				col => self.res_json.table[row.key][col.key]
+			)
+		);
+		console.log(this.res_json.table);
 	},
 	
-	handle_response(response) {
-		if (response.ok)
-			response.json().then(response_json => {
-				this.response_json = response_json;
-				this.respond_all();
-				// the request is deleted at the end, so that others may
-				// still take its value manually and use it.
-				Tables.cache.set(this.domain, this.response_json).then(() => {
-					delete Tables.requests.all[this.domain];
-				});
-			});
+	respond_all() {
+		var self = this;
 		
-		else {
-			this.response_json = Defs.INVALID_RESPONSE;
-			this.respond_all();
-			delete Tables.requests.all[this.domain];
+		if (this.res_json.table) {
+			this.matrixfy_table();
+			this.grade = Common.get_grade(this.res_json.table, this.settings);
+			this.icon = Defs.get_icon_sizes(this.grade);
 		}
+		else
+			this.icon = Defs.get_icon_sizes(this.status.icon);
+		
+		// return chrome.action.openPopup({tabId: self.tab_id});
+		// return chrome.action.setPopup({tabId: self.tab_id, popup: 'popup.html'});
+		
+		var tab_clients_promise = this.status.update_all_tabs ?
+			Common.tabs_with_domain(this.domain).then(
+				tabs => tabs.map(tab => new TabClient(tab.id, tab))
+			)
+			: Promise.resolve([...this.tabs.values()]);
+		
+		if (this.new) {
+			// notify all tabs that have this domain loaded - even the
+			// old ones that have already queried
+			if (Notifications.should_notify(this.settings, this.grade))
+				Notifications.create(
+					this.settings,
+					this.grade,
+					this.res_json.domain,
+				);
+			
+			// tab_clients_promise.then(tab_clients => {
+			// 	for (let tab_client of tab_clients) {
+			// 		chrome.action.setBadgeBackgroundColor({
+			// 			color: '#FF0000',
+			// 			tabId: tab_client.tab_id
+			// 		});
+			// 		chrome.action.setBadgeTextColor({
+			// 			color: '#FFFFFF',
+			// 			tabId: tab_client.tab_id
+			// 		});
+			// 		chrome.action.setBadgeText({
+			// 			text: "!",
+			// 			tabId: tab_client.tab_id
+			// 		});
+			// 	}
+			// });
+		}
+		
+		tab_clients_promise.then(tab_clients => {
+			for (let tab_client of tab_clients)
+				tab_client.respond(self);
+		});
+		
+		
+		for (let port_client of this.ports.values())
+			port_client.respond(this);
 	},
 	
 	start() {
 		var self = this;
-		return fetch(Defs.get_request_url(domain), {
+		
+		if (!this.domain) {
+			this.res_json = {};
+			this.status = Defs.statuses.extension.MSG_NOT_WEBPAGE;
+			this.done = true;
+			this.respond_all();
+			return;
+		}
+		
+		Promise.all([
+			chrome.storage.local.get(this.domain).then(
+				items => items[self.domain]
+			),
+			Common.get_settings()
+		]).then(([cache_json, settings]) => {
+			self.settings = settings;
+			
+			if (self.canceled)
+				return;
+			
+			// send request is json not found in cache, or it's expired.
+			if (cache_json === undefined
+				|| Defs.is_res_expired(cache_json, settings)) {
+				self.cache_json = cache_json;
+				return self.send_request();
+			}
+			// json in cahce and isn't expired
+			else {
+				self.res_json = cache_json;
+				self.status = Defs.statuses.server.get(cache_json.code);
+				self.done = true;
+				self.respond_all();
+				CarpoolRequest.all.delete(self.domain);
+			}
+		});
+	},
+	
+	send_request() {
+		var self = this;
+		
+		return fetch(Defs.get_request_url(this.domain), {
 			method: 'GET',
-			// mode: 'no-cors',//  makes me unable to read response
+			// mode: 'no-cors', // makes me unable to read response
 			signal: this.aborter.signal,
 			cache: 'default'
-		}).then(response => self.handle_response(response));
+		}).then(
+			// request canceled, or was responded to (2XX or otherwise)
+			response =>
+				self.canceled ? [{}, {}] : // <-- dummies
+				!response.ok ? [{}, Defs.statuses.extension.MSG_HTTP_ERR(response.status)] :
+				response.json().then(res_json => {
+					var status = Defs.statuses.server.get(res_json.code);
+					return status ? [res_json, status] :
+						[{}, Defs.statuses.extension.MSG_UNKNOWN_STATUS];
+				}),
+			
+			// timed out
+			() => [{}, Defs.statuses.extension.MSG_CONN_TIMEOUT]
+		).then(([res_json, status]) => {
+			self.res_json = res_json;
+			self.status = status;
+		}).then(
+			() => self.canceled ? Promise.resolve(null) : Common.get_settings()
+		).then(settings => {
+			if (self.canceled)
+				return;
+			
+			if (self.status.retry) {
+				setTimeout(() => self.send_request(), Defs.RETRY_DELAY);
+				return;
+			}
+			
+			var cache_promise;
+			if (self.status.cache) {
+				self.res_json.cache_time = Defs.unix_time();
+				self.res_json.cache_counter = settings['.cache_counter'];
+				
+				// mark the summary as new (unseen) if it has a table,
+				// and an old summary either isn't cached or is cached
+				// but its cached but its policy creation time is
+				// different or is cached but an its an error response
+				// (which gives creation_time === undefined. no need to
+				// test for it since we already asserted that res_json
+				// has a table so it has a creation_time as well.) 
+				self.new = (
+					!!self.res_json.table // new json has a table
+					&& (
+						// we don't have an old version of the summar
+						self.cache_json === undefined 
+						|| self.res_json.creation_time != self.cache_json.creation_time
+					)
+				);
+				
+				self.res_json.unread = self.new;
+				
+				var entry = {};
+				entry[self.domain] = self.res_json;
+				cache_promise = chrome.storage.local.set(entry);
+			}
+			else
+				cache_promise = Promise.resolve(null);
+			
+			self.settings = settings;
+			self.done = true;
+			self.respond_all();
+			
+			return cache_promise.then(() => {
+				CarpoolRequest.all.delete(self.domain);
+			});
+		});
 	},
 	
 	cancel() {
 		this.aborter.abort();
+		this.canceled = true;
+	},
+});
+
+
+// for querying the server for tables for a certain domain.
+// if a client requests a domain's table that there already is
+// a request to, it joins in on it (if it's still pending),
+// or takes the result directly (if it's finishied & is busy sending
+// the result to others).
+Object.assign(CarpoolRequest, {
+	// holds all existing requests by requested domain.
+	all: new Map(),
+	
+	get(client, domain) {
+		var req = this.all.get(domain);
+		
+		if (req) {
+			if (req.done)
+				client.respond(req);
+			else
+				req[client.map_name].set(client.tab_id, client);
+		}
+		else {
+			req = new CarpoolRequest(domain);
+			this.all.set(domain, req);
+			req[client.map_name].set(client.tab_id, client);
+			req.start();
+		}
+	},
+	
+	// for when a client no longer wants a domain's table request
+	cancel(client, domain) {
+		var req = this.all.get(domain);
+		
+		if (!req)
+			return;
+		
+		req[client.map_name].delete(client.tab_id);
+		
+		if (req.tabs.size == 0 && req.ports.size == 0) {
+			this.all.delete(domain);
+			req.cancel();
+		}
 	},
 });
 
@@ -265,210 +555,35 @@ Object.assign(CarpoolRequest.prototype, {
 
 
 
-var Tables = {
-	// for querying the server for tables for a certain domain.
-	// if a client requests a domain's table that there already is
-	// a request to, it joins in on it (if it's still pending),
-	// or takes the result directly (if it's finishied & is busy sending
-	// the result to others).
-	requests: {
-		// holds all existing requests by requested domain.
-		all: {},
-		
-		// for when a client wants a domain's table via a request.
-		get(client, domain) {
-			var req = this.all[domain];
-			if (req) {
-				if (this.response_json === undefined)
-					req[client.map_name].set(client.tab_id, client);
-				else
-					client.respond(this.response_json);
-			}
-			else {
-				req = this.all[domain] = new CarpoolRequest(domain);
-				req[client.map_name].set(client.tab_id, client);
-				req.start();
-			}
-		},
-		
-		// for when a client no longer wants a domain's table request
-		cancel(client, domain) {
-			var req = this.all[domain];
-			if (!req)
-				return;
-			
-			req[client.map_name].delete(client.tab_id);
-			
-			if (req.tabs.size == 0 && req.ports.size == 0) {
-				delete this.all[domain];
-				req.cancel();
-			}
-		},
-	},
-	
-	
-	
-	// past requests results
-	cache: {
-		encode(table) {
-			return {
-				table: table,
-				time: Defs.unix_time()
-			};
-		},
-		
-		decode(encoding) {
-			return encoding.table;
-		},
-		
-		has_expired(encoding) {
-			return encoding.time - Defs.unix_time() >= Defs.CACHE_EXPIRY;
-		},
-		
-		get(domain) {
-			return chrome.storage.local.get(domain).then(items => {
-				var encoding = items[domain];
-				if (encoding === undefined)
-					return undefined;
-				
-				if (Tables.cache.has_expired(encoding))
-					// DON'T REMOVE this domain from the cache!
-					// since it's a cache miss, a request will be sent
-					// to get this domain's table, which then will be
-					// cached & overwrite the expired entry anyway.
-					// besides, cache.remove() would cause a race
-					// condition between itself and the request!
-					return undefined;
-				
-				var table = Tables.cache.decode(encoding);
-				return table;
-			});
-		},
-		
-		set(domain, table) {
-			/* TODO: if cache full, implement LRU:
-			oldest = []; // will contain K oldest non-expired entries
-			go over all keys. for each key:
-				if expired: remove key
-				else:
-					insert key into `oldest` such that it remains
-					sorted by expiration dates.
-					if oldest.length > K: pop out oldest[-1]; 
-			remove all keys in `oldest` from cache.
-			
-			problems:
-			*	deletion might be called by following threads, so we
-				need to set up a flag to tell others, and keep them on
-				standby until the deletion is complete.
-			*	we don't know how many entries we have to delete, since
-				they're not all the same size: table sizes may have an
-				upper bound, but domain lengths are unlimited...
-				*	idea: use IP addresses for keys? nah this is useless
-			
-			solution (making peace with it):
-			theres a minimal entry size, so if we delete N entries we
-			know that we freed at least N * MIN_ENTRY_SIZE bytes.
-			we don't care if after the deletion the cache is still too
-			full to be added 1 big entry, or if we freed too many
-			entries so now it's empty, since the cache is just to
-			optimize performance and it won't cause errors!
-			cuz if the cache is not functional (can't contain any
-			entries or can't store new entries) the implementation still
-			uses requests to get the tables.
-				
-			
-			idea: on extension initialization, delete all expired keys.
-			this shouldn't be so bad right?
-			
-			*/
-			var entry = {};
-			entry[domain] = Tables.cache.encode(table);
-			return chrome.storage.local.set(entry);
-		},
-		
-		cancel(domain) {
-			/* not too important for now, can do without it */
-		},
-		
-		remove_expired() {
-			return chrome.storage.local.get(null).then(all_entries => {
-				var expired_domains = [];
-				for (let domain in all_entries)
-					if (Tables.cache.has_expired(all_entries[domain]))
-						expired_domains.push(domain);
-				return chrome.storage.local.remove(expired_domains);
-			});
-		},
-		
-		clear() {
-			return chrome.storage.local.clear();
-		},
-	},
-	
-	
-	
-	// for when a client wants a domain's table. involves cache checking
-	get(client, domain) {
-		// first, try to find an existing request to hop on.
-		// because if so, it means the cache doesn't have it.
-		var req = this.requests[domain];
-		if (req) {
-			this.requests.get(client, domain);
-			return;
-		}
-		
-		// if didn't find an existing request, try the cache
-		this.cache.get(domain).then(table => {
-			if (table !== undefined)
-				client.respond(table);
-			// if didn't find in chace either, subscribe: create a new
-			// request, or join an existing one (which might exist now)
-			else
-				this.requests.get(client, domain);
-		});
-	},
-	
-	cancel(client, domain) {
-		this.requests.cancel(client, domain);
-		this.cache.cancel(domain);
-	}
-};
-
-
-
-
-
 var Tabs = {
-	tab_domains: [],
+	// all open tab IDs and their current domains
+	tab_domains: new Map(),
 	
 	url_switch(tab) {
 		// also called when a new tab is created. in that case,
 		// tab_domains[tab.id] doesn't exist (`undefined`).
 		// the other case of `undefined` is when a tab is not a webpage.
-		var old_domain = this.tab_domains[tab.id];
-		var new_domain = this.tab_domains[tab.id] = Defs.get_domain(tab.url);
+		var old_domain = this.tab_domains.get(tab.id);
+		var new_domain = Common.get_domain(tab.url);
+		this.tab_domains.set(tab.id, new_domain)
 		
 		var tab_client = new TabClient(tab.id, tab);
 		
-		if (old_domain == new_domain)
-			return;
-		if (old_domain)
-			Tables.cancel(tab_client, old_domain);
-		if (new_domain)
-			Tables.get(tab_client, new_domain);
+		CarpoolRequest.cancel(tab_client, old_domain);
+		CarpoolRequest.get(tab_client, new_domain);
 	},
 	
 	remove(tab_id) {
-		var old_domain = this.tab_domains[tab_id];
-		delete this.tab_domains[tab_id];
+		var old_domain = this.tab_domains.get(tab_id);
+		this.tab_domains.delete(tab_id);
 		if (old_domain) {
 			var tab_client = new TabClient(tab_id, null);
-			Tables.cancel(tab_client, old_domain);
+			CarpoolRequest.cancel(tab_client, old_domain);
 		}
 	},
 	
 	init() {
-		chrome.tabs.query({}, all_tabs => {
+		chrome.tabs.query({}).then(all_tabs => {
 			for (var tab of all_tabs)
 				Tabs.url_switch(tab);
 		});
@@ -476,25 +591,29 @@ var Tabs = {
 };
 
 
-
-function get_settings() {
-	return chrome.storage.local.get({'.open': 0, '.threshold': 0});
-}
-
 function init_settings() {
-	return get_settings().then(items => chrome.storage.local.set(items));
+	return Common.get_settings().then(
+		settings => chrome.storage.local.set(settings)
+	);
 }
 
-Promise.all([
-	Defs.import_json('statuses.json').then(statuses_json => {
+Common.init().then(() => Promise.all([
+	Common.import_json('statuses.json').then(statuses_json => {
 		for (let status of statuses_json.statuses)
-			Defs.STATUSES[status.code] = status.message;
+			Defs.statuses.server.set(status.code, status);
 	}),
-	Tables.cache.clear(), // TODO: delete this
-	Tables.cache.remove_expired(),
-	init_settings()
-]).then(() => {
+	// chrome.storage.local.clear(),
+	Common.clear_cache() // init_settings() // TODO: switch back
+])).then(() => {
 	TabClient.init();
 	PortClient.init();
 	Tabs.init();
+	Notifications.init();
 });
+
+// prevents this page from going inactive after 30 seconds
+function keep_alive() {
+	setInterval(chrome.runtime.getPlatformInfo, 20 * 1000);
+}
+// chrome.runtime.onStartup.addListener(keep_alive);
+keep_alive();

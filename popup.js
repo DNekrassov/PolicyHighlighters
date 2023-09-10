@@ -1,149 +1,310 @@
-const Elems = {};
-var summary_page_group = null;
+var Elems = {};
+
 var legend_box_height = null;
 var clear_cache_progress = null;
 var clear_cache_timer = null;
 
+var cur_tab_promise = chrome.tabs.query({
+	active: true,
+	currentWindow: true
+}).then(tabs => tabs[0]);;
+
+var settings_init_promise = null;
 
 
 
-
-const Table = {
-	create_cell(cls, text) {
-		var cell = document.createElement('div');
+var Summary = {
+	page_group: null, // placeholder
+	edit_mode: false,
+	res_json: null,
+	status: null,
+	
+	ROW_OFFSET: 2,
+	
+	cell_texts: {
+		'unused': '-',
+		'opt-in': 'opt in',
+		'opt-out': 'opt out',
+		'used': 'used'
+	},
+	
+	cell_classes: ['unused', 'opt-in', 'opt-out', 'used'],
+	
+	create_cell(cls, text, with_weight) {
+		var cell = document.createElement('label');
 		cell.classList.add('cell', cls);
-		cell.innerText = text;
+		
+		var text_cont = document.createElement('div');
+		text_cont.classList.add('cell-content');
+		text_cont.innerText = this.cell_texts[cls] || text;
+		cell.append(text_cont);
+		
+		if (with_weight) {
+			var textbox = document.createElement('input');
+			textbox.type = 'text';
+			var weight = document.createElement('div');
+			weight.classList.add('weight-input', 'weight');
+			weight.append(textbox);
+			cell.append(weight);
+		}
+		
 		return cell;
 	},
-	create_row(values) {
+	
+	create_row(vals) {
 		var row = document.createElement('div');
 		row.classList.add('row');
-		for (let val of values)
-			row.append(this.create_cell(val, ''));
+		for (let val of vals)
+			row.append(this.create_cell(this.cell_classes[val], '',  false));
 		return row;
 	},
-	add_entry(data_name, values) {
-		var row = this.create_row([]);
-		row.append(this.create_cell('header', data_name));
-		Elems.tables.children[0].append(row);
-		
-		row = this.create_row(values.slice(0, 4));
+	
+	add_entry(vals) {
+		row = this.create_row(vals.slice(0, 4));
 		Elems.tables.children[1].append(row);
 		
-		row = this.create_row(values.slice(4, 6));
+		row = this.create_row(vals.slice(4, 6));
 		Elems.tables.children[2].append(row);
-		return true;
 	},
 	
 	clear_table() {
-		for (let table of Elems.tables.children)
-			while (table.children.length > 2)
-				Elems.table.lastChild.remove();
+		var table = Elems.tables.children[0];
+		for (let row of [...table.children].slice(this.ROW_OFFSET))
+			row.classList.remove('empty');
+		
+		for (let table of [...Elems.tables.children].slice(1, 3))
+			for (let row of [...table.children].slice(this.ROW_OFFSET))
+				row.remove();
 	},
-	
-	
-	
-	
-
 
 	show_table() {
-		summary_page_group.select(0);
+		this.page_group.select(0);
 	},
+	
 	show_message(title, body) {
-		summary_page_group.select(1);
 		Elems.message_title.innerText = title;
 		Elems.message_body.innerText = body;
+		this.page_group.select(1);
 	},
 	
+	init() {
+		for (let {shown} of Common.row_order) {
+			var row = this.create_row([]);
+			row.append(this.create_cell('header', shown, true));
+			Elems.tables.children[0].append(row);
+		}
+		
+		var row = this.create_row([]);
+		for (let {shown} of Common.col_order.slice(0, 4))
+			row.append(this.create_cell('header', shown, true));
+		Elems.tables.children[1].append(row);
+		
+		var row = this.create_row([]);
+		for (let {shown} of Common.col_order.slice(4, 6))
+			row.append(this.create_cell('header', shown, true));
+		Elems.tables.children[2].append(row);
+		
+		var edit_mode_checkbox = document.querySelector('[name=edit_mode]');
+		edit_mode_checkbox.addEventListener('change', () => {
+			Summary.edit_mode = edit_mode_checkbox.checked;
+			Summary.load();
+			if (Summary.edit_mode) {
+				Elems.tables.classList.add('edited');
+				Elems.val_weights.classList.add('edited');
+				Elems.val_weights.classList.remove('hidden');
+			}
+			else {
+				Elems.tables.classList.remove('edited');
+				Elems.val_weights.classList.remove('edited');
+				Elems.val_weights.classList.add('hidden');
+			}
+		});
+	},
 	
-	load(entries) {
-		this.clear_table();
-		
-		var unused = [];
-		for (let [data_name, values] of entries)
-			if (values.every(val => val == 'unused'))
-				unused.push(data_name);
-			else
-				this.add_entry(data_name, values)
-		
-		Elems.unused.innerText = unused.length > 0 ? unused.join(', ') : '-';
-		
-		if (unused.length < entries.length)
-			this.show_table();
-		else
-			this.show_message(
-				"This website doesn't collect your data",
-				"Your data is 100% safe!"
+	get_table_weights(i) {
+		return Elems.tables.children[i].querySelectorAll('.cell.header .weight-input input');
+	},
+	get_row_weights() {
+		return [...this.get_table_weights(0)];
+	},
+	get_col_weights() {
+		return [...this.get_table_weights(1), ...this.get_table_weights(2)];
+	},
+	get_val_weights() {
+		return [...Elems.val_weights.querySelectorAll('.cell .weight-input input')];
+	},
+	
+	init_weights(weights) {
+		console.log(weights);
+		var pairs = [
+			[this.get_row_weights(), weights.rows],
+			[this.get_col_weights(), weights.cols],
+			[this.get_val_weights(), weights.vals]
+		];
+		for (let [weight_elems, weight_vals] of pairs)
+			weight_elems.forEach((weight_elem, i) => {
+				weight_elem.value = weight_vals[i].toString();
+				weight_elem.addEventListener('blur', () => {
+					Summary.correct_weight(weight_elem);
+					Summary.update_weights();
+				});
+			});
+	},
+	
+	correct_weight(weight) {
+		var num = Number(weight.value);
+		if (isNaN(num) || num < 0)
+			weight.value = '0';
+	},
+	update_weights() {
+		Common.get_settings().then(settings => {
+			settings['.weights'].rows = Summary.get_row_weights().map(
+				weight => Number(weight.value)
 			);
+			settings['.weights'].cols = Summary.get_col_weights().map(
+				weight => Number(weight.value)
+			);
+			settings['.weights'].vals = Summary.get_val_weights().map(
+				weight => Number(weight.value)
+			);
+			console.log(settings['.weights'])
+			Summary.set_grade(settings);
+			return chrome.storage.local.set(settings);
+		})
+	},
+	
+	set_grade(settings) {
+		var grade = Common.get_grade(this.res_json.table, settings);
+		Elems.grade.classList.remove('a', 'b', 'c', 'd');
+		Elems.grade.classList.add(grade);
+	},
+	
+	load() {
+		return settings_init_promise.then(() => {
+			if (!Summary.res_json.table && !Summary.edit_mode)
+				Summary.show_message(
+					Summary.status.title,
+					Summary.status.body
+				);
+			
+			else {
+				Summary.clear_table();
+		
+				var unused_list = [];
+				Summary.res_json.table.forEach((row, i) => {
+					Summary.add_entry(row);
+					if (row.every(val => val == 0)) {
+						unused_list.push(Common.row_order[i].shown);
+						for (let table of Elems.tables.children)
+							table.children[Summary.ROW_OFFSET + i].classList.add('empty');
+					}
+				});
+				
+				// Common.row_order[i].forEach((row_config, i) => {
+				// 	var row = Summary.res_json.table[row_config.key];
+				// 	var vals = Common.col_order.map({key} => row[key]);
+				// 	Summary.add_entry(vals);
+					
+				// 	if (Object.values(vals).every(val => val == 0)) {
+				// 		unused_list.push(row_config.shown);
+				// 		for (let table of Elems.tables.children)
+				// 			table.children[Summary.ROW_OFFSET + i].classList.add('empty');
+				// 	}
+				// })
+				
+				Elems.unused.innerText = unused_list.length ?
+					unused_list.join(', ') : '-';
+					
+				if (unused_list.length == Common.row_order.length) {
+					var wide_cell = this.create_cell('header', "");
+					wide_cell.style.width = "100%";
+					wide_cell.style.height = "100px";
+					wide_cell.style.backgroundColor = "#181818";
+					wide_cell.classList.add('dim');
+					
+					var wide_cell2 = wide_cell.cloneNode(true);
+					wide_cell.innerText = "This website doesn't collect your data";
+					
+					var row = this.create_row([]);
+					row.append(wide_cell);
+					Elems.tables.children[1].append(row);
+					
+					var row = this.create_row([]);
+					row.append(wide_cell2);
+					Elems.tables.children[2].append(row);
+					
+				}
+				Elems.confidence.innerText = Summary.res_json.confidence;
+				
+				return Common.get_settings().then(settings => {
+					Summary.set_grade(settings);
+					Summary.show_table();
+					// 	Summary.show_message(
+					// 		"This website doesn't collect your data",
+					// 		"Your data is 100% safe!"
+					// 	);
+				});
+			}
+		});
+	},
+	
+	fetch() {
+		return cur_tab_promise.then(cur_tab => {
+			var port = chrome.runtime.connect({name: 'table'});
+	
+			port.onMessage.addListener(summary => {
+				// TODO: support new type of request, that marks new
+				// policies as read. background.js will compare the
+				// creation_time of the storage entry to verify.
+				//
+				// if (summary.res_json.new)
+				// 	send_mark_as_read_request(
+				// 	summary.res_json.domain,
+				// 	summary.res_json.creation_time,
+				// );
+				Summary.res_json = summary.res_json;
+				Summary.status = summary.status;
+				Summary.load();
+			});
+			
+			cur_tab_promise.then(cur_tab => {
+				port.postMessage({
+					tab_id: cur_tab.id,
+					url: cur_tab.url
+				});
+			});
+		});
 	}
 };
 
-// function build_summary() {
-// 	// read more abt chrome's tab api
-// 	// https://developer.chrome.com/docs/extensions/reference/tabs/
-// 	chrome.tabs.query(
-// 		{active: true},
-// 		tabs => {
-// 			Table.load([
-// 				['Contact Info', ['unused', 'opt-out', 'opt-out', 'opt-out', 'opt-in', 'used']],
-// 				['Cookies', ['opt-out', 'opt-out', 'used', 'opt-out', 'unused', 'used']],
-// 				['Preferences', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 				['Purchases', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 				['Activity', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 			]);
-// 			return;
-// 			var url = new URL(tabs[0].url);
-// 			if (!['http:', 'https:', ''].includes(url.protocol)) {
-// 				Table.show_message(
-// 					"This page is not a website",
-// 					"It doesn't have a privacy policy!"
-// 				);
-// 				return;
-// 			}
-			
-// 			var req = new XMLHttpRequest();
-// 			req.open('GET', REQUEST_FORMAT + url.hostname);
-// 			req.responseType = 'json';
-			
-// 			req.onload = () => {
-// 				if (req.response.response_type == 'Fail')
-// 					Table.show_message(
-// 						"Server error: Invalid request",
-// 						"Reason: " + req.response.message
-// 					);
-// 				else
-// 					//Table.load(req.response.result_json);
-// 					Table.load([
-// 						['Contact Info', ['unused', 'opt-out', 'opt-out', 'opt-out', 'opt-in', 'used']],
-// 						['Cookies', ['opt-out', 'opt-out', 'used', 'opt-out', 'unused', 'used']],
-// 						['Preferences', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 						['Purchases', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 						['Activity', ['unused', 'unused', 'unused', 'unused', 'unused', 'unused']],
-// 					]);
-// 			};
-			
-// 			req.onerror = () => Table.show_message(
-// 				"Server error: Not responding",
-// 				"We can't get the privacy policy without the server"
-// 			);
-			
-// 			req.send();
-// 		}
-// 	);
-// }
 
 
-function fetch_table() {
-	chrome.tabs.query({active: true}, tabs => {
-		const tab = tabs[0];
-		const port = chrome.runtime.connect({name: 'table'});
-		port.onMessage.addListener(table => Table.load(table));
-		port.postMessage({
-			tab_id: tab.id,
-			url: tab.url
-		});
-	});
+
+// TODO: add badges later?
+function remove_badge() {
+	Promise.all([
+		cur_tab_promise,
+		chrome.tabs.query({})
+	]).then(([cur_tab, all_tabs]) => {
+		var promises = [];
+		var cur_domain = Common.get_domain(cur_tab.url)
+		
+		return Promise.all(all_tabs.map(tab => {
+			var domain = Common.get_domain(tab.url);
+			if (domain == cur_domain)
+				return chrome.action.setBadgeText({
+					text: "",
+					tabId: tab.id
+				});
+			else
+				return null;
+		}));
+	})
 }
+
+
+
+
 
 function PageGroup(parent, initial_index) {
 	this.pages = [...parent.children];
@@ -173,13 +334,15 @@ Object.assign(PageGroup.prototype, {
 
 
 
+
+
 function init_menu() {
 	var page_group = new PageGroup(Elems.pages, 0);
 	
 	var menu_items = [...Elems.menu.children];
 	menu_items[page_group.sel_index].classList.add('selected');
 	
-	// const MENU_X = Elems.menu.getBoundingClientRect().x;
+	// var MENU_X = Elems.menu.getBoundingClientRect().x;
 	// function move_highlighter(button) {
 	// 	var button_rect = button.getBoundingClientRect();
 	// 	var left = button_rect.x - MENU_X;
@@ -204,39 +367,83 @@ function init_menu() {
 }
 
 
+
+
+
+// important! must be called at least once for initialization.
 function toggle_legend() {
 	Elems.legend_arrow.classList.toggle('up');
-	Elems.legend_button.classList.toggle('braces');
+	Elems.legend_wings.classList.toggle('braces');
 	
-	if (Elems.legend_button.classList.contains('braces'))
+	var turning_open = Elems.legend_wings.classList.contains('braces');
+	if (turning_open)
 		// TODO: this wont work if the elements can change size
 		Elems.legend_box.style.height = legend_box_height + 'px';
 	else
 		Elems.legend_box.style.height = '0px';
+	
+	return chrome.storage.local.set({'.legend': turning_open});
 }
 
-function settings_init() {
-	chrome.storage.local.get(['.open', '.threshold']).then(items => {
-		for (let [setting, value] of Object.entries(items)) {
-			console.log(setting);
-			// initialize to saved config value
-			var name = setting.substring(1); // remove dot
-			var radios = document.querySelectorAll(`[name=${name}]`);
-			radios[value].checked = true;
-			
-			// save on change
-			[...radios].forEach((radio, i) => {
-				var entry = {};
-				entry[setting] = i;
-				
-				// fires only when radio becomes checked
-				radio.addEventListener('change', () => {
-					chrome.storage.local.set(entry);
-				});
-			});
+
+
+
+
+function settings_init(settings) {
+	function legend_init(value) {
+		// legend starts open. if value == true, keep open,
+		// toggle_legend() must still be called for initialization.
+		if (value) {
+			toggle_legend();
+			toggle_legend();
 		}
-	});
+		// if value == false, close
+		else
+			toggle_legend();
+	}
+	
+	function ckeckbox_init(setting, value) {
+		var name = setting.substring(1); // remove dot
+		var checkbox = document.querySelector(`input[name=${name}]`);
+		checkbox.checked = value;
+		
+		checkbox.addEventListener('change', () => {
+			var entry = {};
+			entry[setting] = checkbox.checked;
+			chrome.storage.local.set(entry);
+		});
+	}
+	function radio_init(setting, value) {
+		var name = setting.substring(1); // remove dot
+		var radios = document.querySelectorAll(`input[name=${name}]`);
+		
+		[...radios].forEach((radio, i) => {
+			// initialize to saved config value
+			if (radio.value == value)
+				radio.checked = true;
+			// fires only when radio becomes checked
+			radio.addEventListener('change', () => {
+				var entry = {};
+				entry[setting] = radio.value;
+				chrome.storage.local.set(entry);
+			});
+		});
+	}
+	
+	for (let [setting, value] of Object.entries(settings))
+		if (setting == '.silent')
+			ckeckbox_init(setting, value);
+		else if (['.notif_cond', '.threshold', '.priority'].includes(setting))
+			radio_init(setting, value);
+		else if (setting == '.legend')
+			legend_init(value);
+		else if (setting == '.weights')
+			Summary.init_weights(value);
 }
+
+
+
+
 
 function clear_cache_button_init() {
 	function cancel() {
@@ -269,13 +476,13 @@ function clear_cache_button_init() {
 			'width': '0%',
 			'opacity': '0',
 		});
-		setTimeout(() => {
+		requestAnimationFrame(() => {
 			Object.assign(progress.style, {
-				'transition': 'width 2s linear, opacity 0.5s linear, background-color 0.5s linear',
+				'transition': 'width 2s linear, opacity 0.2s linear, background-color 0.5s linear',
 				'width': '100%',
 				'opacity': '1'
 			});
-		}, 0);
+		});
 		
 		Elems.clear_cache_progress_cont.append(progress);
 		Elems.clear_cache.classList.add('held');
@@ -289,7 +496,9 @@ function clear_cache_button_init() {
 				i--;
 			}
 			else {
+				Common.clear_cache();
 				cancel();
+				
 				Elems.cache_cleared_message.style.transition = 'none';
 				requestAnimationFrame(() => {
 					Elems.cache_cleared_message.style.opacity = '1';
@@ -307,15 +516,10 @@ function clear_cache_button_init() {
 		
 		update_timer();
 		clear_cache_timer = setInterval(update_timer, 100);
-		
-		
 	});
-	
-
 	
 	Elems.clear_cache.addEventListener('mouseup', cancel);
 	Elems.clear_cache.addEventListener('mouseleave', cancel);
-	
 	cancel();
 }
 
@@ -323,27 +527,29 @@ function onload() {
 	for (let elem of document.querySelectorAll('[id]'))
 		Elems[elem.id] = elem;
 	
-	summary_page_group = new PageGroup(Elems.summary_pages, 0);
-	
+	Summary.page_group = new PageGroup(Elems.summary_pages, 0);
 	init_menu();
+	clear_cache_button_init();
 	
 	legend_box_height = Elems.legend_box.getBoundingClientRect().height;
 	Elems.legend_button.addEventListener('click', toggle_legend);
-	toggle_legend();
-	Elems.legend_button.classList.add('trans');
-	Elems.legend_box.classList.add('trans');
-	Elems.legend_arrow.classList.add('trans');
 	
-	settings_init();
-	clear_cache_button_init();
-	
-	
-	
-	Table.show_message(
+	Summary.show_message(
 		"Loading...",
 		"We're extracting the summary of this website's privacy policy"
 	);
-	fetch_table();
+	
+	settings_init_promise = Common.init().then(() => {
+		Summary.init();
+		return Common.get_settings();
+	}).then(settings => {
+		settings_init(settings);
+		Elems.legend_button.classList.add('trans');
+		Elems.legend_arrow.classList.add('trans');
+		Elems.legend_box.classList.add('trans');
+	});
+	
+	Summary.fetch();
 }
 
 // using 'DOMContentLoaded' gives wrong dimensions for some elements...

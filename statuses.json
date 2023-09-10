@@ -1,50 +1,51 @@
 {
   "statuses": [
     {
-      "id": 0,
-      "code": "MSG_SUCCESS",
-      "message": "Successful ChatGPT response",
-      "bug": false,
-      "cache": true
+      "code": 0,
+      "name": "MSG_SUCCESS",
+      "cache": true,
+      "update_all_tabs": true
     },
     {
-      "id": 1,
-      "code": "MSG_ERR_INVALID_ARG",
-      "message": "Invalid arguments passed to the system",
-      "bug": true,
-      "cache": false
+      "code": 1,
+      "name": "MSG_ERR_INVALID_ARG",
+      "title": "Bad request arguments",
+      "body": "Invalid arguments were passed to the system",
+      "cache": false,
+      "update_all_tabs": true,
+      "icon": "error"
     },
     {
-      "id": 2,
-      "code": "MSG_ERR_INVALID_URL",
-      "message": "Invalid domain passed to the system",
-      "bug": true,
-      "cache": false
+      "code": 2,
+      "name": "Bad request domain",
+      "title": "Extension error",
+      "body": "Invalid domain was passed to the system",
+      "cache": false,
+      "update_all_tabs": true,
+      "icon": "error"
     },
     {
-      "id": 3,
-      "code": "MSG_ERR_NO_POLICY_FOUND",
-      "message": "No privacy policy for this domain was found in our database",
-      "notify": true,
-      "cache": true
+      "code": 3,
+      "name": "MSG_ERR_NO_POLICY_FOUND",
+      "title": "Policy not found",
+      "body": "No privacy policy for this domain was found in our database",
+      "cache": true,
+      "update_all_tabs": true,
+      "icon": "error"
     },
     {
-      "id": 4,
-      "code": "MSG_ERR_INVALID_RESULT",
-      "message": "Our system couldn't produce a valid summary for the privacy policy",
-      "notify": true,
-      "cache": true
+      "code": 4,
+      "name": "MSG_ERR_INVALID_RESULT",
+      "title": "Policy can't be summarized",
+      "body": "Our system couldn't produce a valid summary for the privacy policy",
+      "cache": true,
+      "update_all_tabs": true,
+      "icon": "error"
     },
     {
-      "id": 5,
-      "code": "MSG_IN_PROCESS",
-      "message": "Our system is still calculating the result, please wait a while",
-      "response_type": "Fail"
-    },
-    {
-      "id": -999,
-      "code": "",
-      "message": ""
+      "code": 5,
+      "name": "MSG_IN_PROCESS",
+      "retry": true
     }
   ]
 }

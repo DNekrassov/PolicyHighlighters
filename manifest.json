@@ -1,12 +1,14 @@
 {
 	"manifest_version": 3,
-	"name": "Policy Highlighter",
-	"description": "Presents websites' privacy policy as a short, readable table.",
-	"version": "0.0.1",
+	"name": "Policy Highlighters",
+	"description": "Use ChatGPT to summarize websites' privacy policies, and present them in a short, readable table.",
+	"version": "1.0.0",
 	
 	"icons": {
-		"32": "icons/icon_default32.png",
-		"256": "icons/icon_default256.png"
+		"256": "icons/a256.png",
+		"128": "icons/a128.png",
+		"48": "icons/a48.png",
+		"16": "icons/a16.png"
 	},
 	
 	"permissions": [
@@ -16,18 +18,22 @@
 		// background
 		"tabs",
 		"storage",
+		"unlimitedStorage",
+		"notifications"
 		
 		// remove these later
-		"scripting",
-		"webNavigation"
+		// "scripting",
+		// "webNavigation"
 	],
 	
 	"action": {
-		"default_popup": "popup.html"
+		"default_popup": "popup.html",
+		"default_icon": "icons/loading16.png"
 	},
 	
 	"background": {
 		"service_worker": "background.js"
+		// "persistent": false
 	}
 	
 	// "content_scripts": [{
