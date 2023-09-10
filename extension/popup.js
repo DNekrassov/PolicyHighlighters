@@ -135,7 +135,6 @@ var Summary = {
 	},
 	
 	init_weights(weights) {
-		console.log(weights);
 		var pairs = [
 			[this.get_row_weights(), weights.rows],
 			[this.get_col_weights(), weights.cols],
@@ -264,8 +263,11 @@ var Summary = {
 				// );
 				Summary.res_json = summary.res_json;
 				Summary.status = summary.status;
-				Summary.res_json.table = Common.matrixfy_table(Summary.res_json.table);
-				Summary.load();
+				settings_init_promise.then(() => {
+					if (Summary.res_json.table)
+						Summary.res_json.table = Common.matrixfy_table(Summary.res_json.table);
+					Summary.load();
+				});
 			});
 			
 			cur_tab_promise.then(cur_tab => {
@@ -277,6 +279,7 @@ var Summary = {
 		});
 	}
 };
+
 
 
 
@@ -541,7 +544,7 @@ function onload() {
 	);
 	
 	settings_init_promise = Common.init().then(() => {
-		Summary.init();
+		Summary.init()
 		return Common.get_settings();
 	}).then(settings => {
 		settings_init(settings);
