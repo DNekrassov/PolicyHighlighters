@@ -10,7 +10,7 @@ class Config:
 
 META_FILEPATH = './privaseer_demo/metadata'
 PRIVA_FILEPATH = './privaseer_demo/plaintext'
-DEFAULT_JSON = dict()
+DEFAULT_JSON = None
 TEST_JSON = {
 		"contacts":         { "service": 0, "maintenance": 1, "marketing": 2, "profiling": 3, "other_companies": 0, "public_forums": 0 },
 		"cookies":          { "service": 0, "maintenance": 1, "marketing": 2, "profiling": 3, "other_companies": 0, "public_forums": 0 },

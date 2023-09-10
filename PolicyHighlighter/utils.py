@@ -80,7 +80,7 @@ def canonical_url(u):
     if subdomain.startswith("www."):
         subdomain = subdomain[4:]
 
-    #recursively building subdomain list: e.g.: forums.news.cnn.com -> news.cnn.com -> cnn.com
+    # recursively building subdomain list: e.g.: forums.news.cnn.com -> news.cnn.com -> cnn.com
     if subdomain == "":
         return [domain]
     full_subdomain = ".".join([subdomain, domain])
@@ -92,7 +92,6 @@ def canonical_url(u):
         lst.append(name)
 
     return lst
-
 
 
 def check_internal_policy_DB(policy_url):
@@ -136,6 +135,7 @@ def response_jsonify(message, table, policy=None):
     if policy is None:
         response = flask.jsonify(table=table, code=int(message))
     else:
-        response = flask.jsonify(table=table, code=int(message), domain=policy.url, creation_time=policy.timestamp, confidence=policy.probability)
-    response.headers.add('Access-Control-Allow-Origin', '*')
+        response = flask.jsonify(table=table, code=int(message), domain=policy.url, creation_time=policy.timestamp,
+                                 confidence=policy.probability)
+    response.headers['Access-Control-Allow-Origin'] = '*'
     return response

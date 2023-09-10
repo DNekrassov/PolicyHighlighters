@@ -22,8 +22,8 @@ def request_route():
 
     policy_url = request.args.get('policy_url')
 
-    if not validators.url(policy_url):
-        return response_jsonify(message=Status.MSG_ERR_INVALID_URL, table=DEFAULT_JSON)
+    # if not validators.url(policy_url):
+    #    return response_jsonify(message=Status.MSG_ERR_INVALID_URL, table=DEFAULT_JSON)
 
     policy = check_policy_by_url(policy_url)
 
