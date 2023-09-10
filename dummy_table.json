@@ -1,0 +1,10 @@
+{
+	"table": {
+		"Contact info": ["unused", "opt-out", "opt-out", "opt-out", "opt-in", "used"],
+		"Cookies": ["opt-out", "opt-out", "used", "opt-out", "unused", "used"],
+		"Preferences": ["unused", "unused", "unused", "unused", "unused", "unused"],
+		"Purchases": ["unused", "unused", "unused", "unused", "unused", "unused"],
+		"Activity": ["unused", "unused", "unused", "unused", "unused", "unused"]
+	},
+	"code": 0
+}

@@ -1,0 +1,794 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+	<title>Policy Highlighters</title>
+	
+	<style>
+		/* fonts from goodle fonts that i tired :3
+		Big_Shoulders_Text
+		Goldman
+		Odibee_Sans
+		Wallpoet */
+		
+		@font-face {
+			font-family: coda;
+			src: url('Coda/Coda-Regular.ttf');
+		}
+		
+		html {
+			max-height: 750px;
+		}
+		html, body {
+			margin: 0;
+		}
+		body {
+			color: #f0f0f0;
+			background-color: #202020;
+			border: 1px solid #505050;
+			font-size: 12px;
+			font-family: coda;
+			font-variant: no-common-ligatures;
+		}
+		*, :before, :after {
+			box-sizing: border-box;
+		}
+		
+		button, input[type=text] {
+			font: inherit;
+			color: inherit;
+			background-color: #00000000;
+			padding: 0;
+			margin: 0;
+			outline: none;
+			cursor: pointer;
+			display: inline-block;
+		}
+		button {
+			border-width: 0;
+		}
+		input[type=text] {
+			border-color: inherit;
+			border-style: solid;
+			border-width: 0 0 1px;
+		}
+		
+		style,
+		script,
+		.hidden,
+		.input input {
+			display: none !important;
+		}
+		
+		
+		.big-font { font-size: 16px; }
+		.dim { color: #b0b0b0; }
+		.trans, .trans:before, .trans:after { transition: 0.2s; }
+		
+		.flex-row, .flex-col {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+		.flex-row { flex-direction: row; }
+		.flex-col { flex-direction: column; }
+		.verti-spaced > *:not(:last-child) { margin-bottom: 16px; }
+		.horiz-spaced > *:not(:last-child) { margin-right: 16px; }
+		
+		
+		label:not(.cell:not(:has(input[name=edit_mode]))),
+		.edited .cell:has(.weight-input) {
+			cursor: pointer;
+		}
+		
+		.input {
+			display: inline-block;
+			height: 14px;
+			width: 14px;
+			border-width: 1px;
+			border-style: solid;
+		}
+		.input:has(input[type=radio]) {
+			border-radius: 7px;
+		}
+		.input:has(input[type=checkbox]) {
+			border-radius: 3px;
+		}
+		
+		.input:has(input:checked):before {
+			content: "";
+			display: block;
+			box-shadow: none; /* avoids intertal glow. looks bad on checkbox */
+			background-color: #0000;
+		}
+		.input:has(input[type=radio]:checked):before {
+			height: 4px;
+			width: 4px;
+			border-width: 2px;
+			border-style: solid;
+			border-radius: 2px;
+			margin: 4px;
+		}
+		.input:has(input[type=checkbox]:checked):before {
+			height: 9px;
+			width: 6px;
+			border-width: 0 2px 2px 0;
+			border-style: solid;
+			margin-left: 4px;
+			rotate: 45deg;
+		}
+		
+		:has(input[type=radio]:not(:checked)) + .option_disabler {
+			opacity: 0.5;
+			position: relative;
+		}
+		:has(input[type=radio]:not(:checked)) + .option_disabler:after {
+			content: "";
+			display: block;
+			position: absolute;
+			top: 0;
+			left: 0;
+			height: 100%;
+			width: 100%;
+			visibility: none;
+		}
+		
+
+		
+		
+		.wings, .braces {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		
+		.wings:before, .wings:after, .braces:before, .braces:after {
+			content: "";
+			flex: 1;
+			border-color: #b0b0b0;
+			border-style: solid;
+			border-width: 1px 0 0;
+			margin-top: 0.5lh;
+			align-self: flex-start;
+		}
+		.wings:before, .braces:before {
+			border-width: 1px 0 0 1px;
+			transform: skew(-45deg);
+		}
+		.wings:after, .braces:after {
+			border-width: 1px 1px 0 0;
+			transform: skew(45deg);
+		}
+		
+		.wings.up:before, .wings.up:after, .braces.up:before, .braces.up:after {
+			margin-bottom: 0.5lh;
+			align-self: flex-end;
+		}
+		.wings.up:before, .braces.up:before {
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg);
+		}
+		.wings.up:after, .braces.up:after {
+			border-width: 0 1px 1px 0;
+			transform: skew(-45deg);
+		}
+		
+		.wings:before, .wings:after {
+			height: 1px;
+		}
+		.wings:before { margin-left: 0; margin-right: 6px; }
+		.wings:after { margin-left: 6px; margin-right: 0; }
+		
+		.braces:before, .braces:after {
+			height: 0.5lh;
+		}
+		.braces:before { margin-left: 0.25lh; margin-right: calc(6px + 0.25lh); }
+		.braces:after { margin-left: calc(6px + 0.25lh); margin-right: 0.25lh; }
+		
+		
+		.braces:empty {
+			height: 1lh;
+		}
+		.braces:empty:before {
+			margin-right: 0;
+		}
+		.braces:empty:after {
+			margin-left: 0;
+		}
+		
+		/*
+		 _____
+		|    /| old style: the center of rotation (marked x) makes 
+		| _x| | the rotation looks unnatural, cuz it's not the arrow's
+		|/____| center of mass.
+		 ________
+		|    /|  | new style: we pad the arrow to shift the center of
+		| __| |  | rotation to the center of mass.
+		|/___x|  | the inner square = the :before element. the arrow is
+		|________| the :before element's border.
+		*/
+		.arrow {
+			height: 9px; 
+			width: 9px; 
+			display: inline-block;
+			vertical-align: middle;
+			rotate: 45deg;
+		}
+		.arrow:before {
+			content: "";
+			display: block;
+			height: 6px; 
+			width: 6px; 
+			border-top: 2px solid transparent;
+			border-left: 2px solid transparent;
+			border-bottom: 2px solid #b0b0b0;
+			border-right: 2px solid #b0b0b0;
+		}
+		.arrow.up { rotate: -135deg; }
+		
+		
+		.menu-item {
+			font-weight: bold;
+			color: #b0b0b0;
+			justify-content: center;
+			text-align: center;
+			width: 70px;
+			padding: 14px 4px;
+			margin-left: 8px;
+			position: relative;
+		}
+		.menu-item:hover, .menu-item.selected {
+			color: #f0f0f0;
+		}
+		/*.menu-item.selected {
+			border-image: linear-gradient(#f6b73c, #4d9f0c) 30;
+			border-width: 0 0 4px;
+			border-style: solid;
+		}*/
+		.menu-item.selected:after {
+			content: "";
+			display: block;
+			position: absolute;
+			bottom: 0;
+			left: 0;
+			height: 10px;
+			width: inherit;
+			background: linear-gradient(#80c0ff00, #80c0ff);
+		}
+		
+		
+		#pages > * {
+			background: linear-gradient(#505050, #202020 80px);
+		}
+		#tables {
+			display: flex;
+			flex-direction: row;
+		}
+		#tables > *:not(:last-child) {
+			margin-right: 12px;
+		}
+		
+		
+		#tables:not(.edited) .row.empty {
+			display: none;
+		}
+		#tables:not(.edited) .row:has(~ .row:not(.empty)),
+		#tables.edited .row:has(~ .row) {
+			margin-bottom: 4px;
+		}
+		
+		
+		.row {
+			display: flex;
+			flex-direction: row;
+			align-items: center;
+		}
+		.row > *:not(:last-child) {
+			margin-right: 4px;
+		}
+		
+		.cell, .grade, #clear_cache {
+			border-width: 1px;
+			border-style: solid;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+		.cell {
+			flex-direction: column;
+			height: 36px;
+			width: 70px;
+			font-size: 12px;
+		}
+		.grade {
+			flex-direction: row;
+			padding: 0 8px;
+			height: 26px;
+			width: 60px;
+			border-radius: 13px;
+		}
+		
+		.cell.header {
+			border-color: #f0f0f0;
+			border-width: 0;
+			font-weight: bold;
+		}
+		
+		
+		
+		
+		
+		.cell.unused,
+		.grade.a,
+		#clear_cache,
+		label .input,
+		label .input:before {
+			box-shadow: 0 0 6px 2px #80c0ff40, inset 0 0 6px 2px #80c0ff40;
+			background-color: #80c0ff40;
+			border-color: #80c0ff;
+			color: #80c0ff;
+		}
+		#clear_cache .clear_cache_progress { background-color: #80c0ff40; }
+		a, a:visited { color: #80c0ff; }
+		
+		#clear_cache {
+			transition:
+				box-shadow 0.5s linear,
+				background-color 0.5s linear,
+				border-color 0.5s linear,
+				color 0.5s linear;
+		}
+		#clear_cache:not(.held):hover,
+		a:hover, a:visited:hover,
+		label:hover .input,
+		label:hover .input:before,
+		.hover-highlight:hover {
+			cursor: pointer;
+			/* the only way i could find to increase brightness while
+			preserving the color */
+			filter: invert(1) brightness(0.6) invert(1);
+			
+			/* filter: drop-shadow(0 0 1px);*/
+		}
+		
+		.cell.opt-in,
+		.grade.b {
+			box-shadow: 0 0 6px 2px #a0e0ff40, inset 0 0 6px 2px #a0e0ff40;
+			background-color: #a0e0ff40;
+			border-color: #a0d0ff;
+			color: #a0d0ff;
+		}
+		
+		
+		.cell.opt-out,
+		.grade.c {
+			box-shadow: 0 0 6px 2px #ff700040, inset 0 0 6px 2px #ff700040;
+			background-color: #ff700040;
+			border-color: #ffb040;
+			color: #ffb040;
+		}
+		
+		.cell.used,
+		.grade.d,
+		#clear_cache.held {
+			box-shadow: 0 0 6px 2px #ff000040, inset 0 0 6px 2px #ff000040;
+			background-color: #ff000040;
+			border-color: #ff4040;
+			color: #ff4040;
+		}
+		#clear_cache.held .clear_cache_progress {
+			background-color: #ff000040;
+		}
+		/*.grade.e {
+			box-shadow: 0 0 6px 2px #00ff0040;
+			background-color: #00ff0040;
+			border-color: #40ff40;
+			color: #40ff40;
+		}
+		.grade.f {
+			box-shadow: 0 0 6px 2px #a0ff0040;
+			background-color: #a0ff0040;
+			border-color: #e0ff20;
+			color: #e0ff20;
+		}*/
+		
+		/*.cell.unused:before { content: "-"; }
+		.cell.opt-in:before { content: "opt in"; }
+		.cell.opt-out:before { content: "opt out"; }
+		.cell.used:before { content: "used"; }*/
+		.cell-content {
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			text-align: center;
+		}
+		.weight-input {
+			align-self: stretch;
+			display: flex;
+			flex-direction: row;
+			justify-content: center;
+			align-items: center;
+/*			height: 1lh;*/
+			font-weight: normal;
+			opacity: 0.7;
+		}
+		.weight-input:before, .weight-input:after {
+			border-width: 0 0 1px;
+			border-color: transparent;
+			border-style: solid;
+		}
+		.weight-input:before {
+/*			margin-right: 4px;*/
+		}
+		.weight-input.weight:before {
+			content: "Wt. ";
+		}
+		.weight-input.severity:before {
+			content: "Sev.";
+		}
+		.weight-input.severity:after {
+			content: "%";
+		}
+		
+		.weight-input input {
+			height: 12px;
+			/*width: 0;
+			flex: 1;*/
+			border-width: 0 0 1px;
+			border-color: transparent;
+		}
+		.weight-input.weight input {
+			width: 24px;
+		}
+		.weight-input.severity input {
+			width: 20px;
+		}
+		label:hover .weight-input,
+		.weight-input:has(input:focus) {
+			opacity: 1;
+		}
+		label:hover .weight-input input,
+		.weight-input input:focus {
+			border-color: inherit;
+		}
+		
+		
+		.weight-input { /* normally, when edit mode is off */
+			display: none;
+		}
+		.edited .weight-input {
+			display: block;
+		}
+		.edited .cell {
+			height: 44px;
+		}
+		#tables.edited .cell:is(.unused, .opt-in, .opt-out, .used) {
+			opacity: 0.5;
+		}
+		
+
+		.grade:before {
+			font-weight: bolder;
+			font-size: 12px;
+			flex: 1;
+		}
+		.grade.a:before { content: "A"; }
+		.grade.b:before { content: "B"; }
+		.grade.c:before { content: "C"; }
+		.grade.d:before { content: "D"; }
+		/*.grade.e:before { content: "E"; }
+		.grade.f:before { content: "F"; }*/
+		
+		.grade:after {
+			content: "";
+			height: 16px;
+			width: 16px;
+			background-size: 16px 16px;
+		}
+		.grade.a:after { background-image: url("markers/a.png"); }
+		.grade.b:after { background-image: url("markers/b.png"); }
+		.grade.c:after { background-image: url("markers/c.png"); }
+		.grade.d:after { background-image: url("markers/d.png"); }
+		/*.grade.e:after { background-image: url("markers/d.png"); }
+		.grade.f:after { background-image: url("markers/d.png"); }*/
+		
+	</style>
+	
+	<script src="common.js"></script>
+	<script src="popup.js"></script>
+	
+</head>
+
+<body>
+	
+	<div class="flex-row" style="
+		height: 60px;
+		padding: 0 16px;
+		background: url(hex.png) #202020;
+		border-bottom: 1px solid #b0b0b0;">
+		
+		<span style="flex: 1; font-size: 18px; font-weight: bold;">
+			Policy Highlighters
+		</span>
+		
+		<div id="menu" style="align-self: flex-end;">
+			<button class="menu-item">Summary</button>
+			<button class="menu-item">Settings</button>
+			<button class="menu-item">About</button>
+			<!-- <div id="selection_highlighter" style="position: absolute; bottom: 0;"></div> -->
+		</div>
+		
+		<!-- Top-Right Fancy Corner(TM) -->
+		<div style="position: absolute;
+			height: 16px; width: 220px;
+			top: 0; right: -20px;
+			background-color: #404040;
+			border-color: #b0b0b0; border-style: solid;
+			border-width: 0 0 1px 1px;
+			transform: skew(45deg);">
+		</div>
+		
+	</div>
+	
+	<div id="pages" style="width: 580px;">
+		
+		<div id="summary_pages" style="padding: 32px 16px;">
+			
+			<!-- table page -->
+			<div class="flex-col">
+				
+				<div class="flex-row" style="width: 340px; text-align: center; margin-bottom: 32px;">
+					<b style="margin-right: 6px;">Match confidence:</b>
+					<b id="confidence" class="big-font"></b><span>%</span>
+					
+					<b style="margin-left: 30px; margin-right: 10px;">Policy grade:</b>
+					<div id="grade" class="grade"></div>
+				</div>
+				
+				<div id="val_weights" class="flex-col verti-spaced hidden" style="margin-bottom: 32px;">
+					<div style="text-align: center;">
+						In edit mode, you can customize the weights (Wt.)
+						of cell values to decide their severity, and the
+						weights of the table's columnsand rows to decide their relative importance.
+						<br />
+						These will only affect the result of the summary's grade. 
+					</div>
+					<div style="width: 400px; display: flex; flex-direction: row; justify-content: space-around;">
+						<label class="cell unused">
+							<div>-</div>
+							<div class="weight-input weight"><input type="text" /></div>
+						</label>
+						<label class="cell opt-in">
+							<div>opt in</div>
+							<div class="weight-input weight"><input type="text" /></div>
+						</label>
+						<label class="cell opt-out">
+							<div>opt out</div>
+							<div class="weight-input weight"><input type="text" /></div>
+						</label>
+						<label class="cell used">
+							<div>used</div>
+							<div class="weight-input weight"><input type="text" /></div>
+						</label>
+					</div>
+				</div>
+				
+				<div id="tables" style="margin-bottom: 16px;">
+					<div class="table">
+						<!-- dummy elements to take up the brace row and
+							header cell row just like tables 1 and 2 -->
+						<div class="row">
+							<label class="cell header" style="flex-direction: row;">
+								<div class="input" style="margin-right: 8px;">
+									<input type="checkbox" name="edit_mode" />
+								</div>
+								<div style="width: 50px; font-weight: bold;">Edit mode</div>
+							</label>
+						</div>
+						<div class="braces" style="opacity: 0;">0</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Internally used</div>
+					</div>
+					<div class="table">
+						<div class="braces dim">Shared</div>
+					</div>
+				</div>
+				
+				<div class="dim" style="width: 340px; text-align: center; margin-bottom: 32px;">
+					<b>Uncollected data:</b> <span id="unused"></span>
+				</div>
+				
+				<!-- a wrapper for the legend button & box, to not add a space after the button -->
+				<div class="flex-col" style="">
+					<div id="legend_wings" class="wings braces" style="width: 380px;">
+						<button id="legend_button">
+							<b>Legend</b>
+							<div id="legend_arrow" class="arrow up" style="margin-left: 5px;"></div>
+						</button>
+					</div>
+					
+					<!-- a wrapper to make the legend stick to the bottom (flex-end) of the box,
+						so overflow crops it at the top (to make the bottom brace drop instead of reveal) -->
+					<div id="legend_box" class="flex-row" style="width: 400px; overflow: hidden; text-align: center;">
+						<div class="flex-col verti-spaced" style="align-self: flex-end; align-items: stretch;">
+							<div style="height: 0;"></div> <!-- a dummy to force padding -->
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<label class="cell unused">
+									<div>-</div>
+								</label>
+								<label class="cell opt-in">
+									<div>opt in</div>
+								</label>
+								<label class="cell opt-out">
+									<div>opt out</div>
+								</label>
+								<label class="cell used">
+									<div>used</div>
+								</label>
+							</div>
+							<div style="display: flex; flex-direction: row; justify-content: space-around;">
+								<div style="width: 78px;">This website doesn't use your data this way.</div>
+								<div style="width: 78px;">By default, this website doesn't use your data this way, unless you opt in.</div>
+								<div style="width: 78px;">By default, this website uses your data this way, unless you opt out.</div>
+								<div style="width: 78px;">This website uses your data this way.</div>
+							</div>
+							<div class="braces up" style="width: 360px; margin: 0 auto;"></div>
+						</div>
+					</div>
+				</div>
+			</div>
+			
+			<!-- message page -->
+			<div class="flex-col verti-spaced" style="height: 200px;">
+				<b id="message_title" class="big-font"></b>
+				<span id="message_body"></span>
+			</div>
+		</div>
+		
+		
+		
+		<!-- settings page -->
+		<div class="flex-col verti-spaced" style="padding: 32px; align-self: stretch; align-items: start;">
+			<div class="big-font" style="font-weight: bold;">
+				Notify about new/updated privacy policies when I visit websites
+			</div>
+			
+			<label class="flex-row" style="justify-content: left; margin-left: 16px; font-weight: bold;">
+				<div class="input" style="margin-right: 8px;">
+					<input type="radio" name="notif_cond" value="always" />
+				</div>
+				Always
+			</label>
+			
+			<label class="flex-row" style="justify-content: left; margin-left: 16px; font-weight: bold;">
+				<div class="input" style="margin-right: 8px;">
+					<input type="radio" name="notif_cond" value="never" />
+				</div>
+				Never
+			</label>
+			
+			<label class="flex-row" style="justify-content: left; margin-left: 16px; font-weight: bold;">
+				<div class="input" style="margin-right: 8px;">
+					<input type="radio" name="notif_cond" value="threshold" />
+				</div>
+				Only when the policy grade is lower or equal to:
+			</label>
+			
+			<div class="option_disabler flex-row horiz-spaced" style="align-self: center;">
+				<label class="flex-row">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="threshold" value="a" />
+					</div>
+					<div class="grade a"></div>
+				</label>
+				<label class="flex-row">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="threshold" value="a" />
+					</div>
+					<div class="grade b"></div>
+				</label>
+				<label class="flex-row">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="threshold" value="a" />
+					</div>
+					<div class="grade c"></div>
+				</label>
+				<label class="flex-row">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="threshold" value="a" />
+					</div>
+					<div class="grade d"></div>
+				</label>
+			</div>
+			
+			<div class="big-font" style="font-weight: bold;">
+				Notification preferences
+			</div>
+			
+			<div class="flex-row horiz-spaced" style="justify-content: center; width: 100%">
+				<div style="width: 50px; font-weight: bold;">Priority:</div>
+				
+				<label class="flex-row" style="font-weight: bold;">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="priority" value="0" />
+					</div>
+					0
+				</label>
+				
+				<label class="flex-row" style="font-weight: bold;">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="priority" value="1" />
+					</div>
+					1
+				</label>
+				
+				<label class="flex-row" style="font-weight: bold; margin-right: 80px;">
+					<div class="input" style="margin-right: 8px;">
+						<input type="radio" name="priority" value="2" />
+					</div>
+					2
+				</label>
+				
+				<label class="flex-row horiz-spaced">
+					<div class="input">
+						<input type="checkbox" name="silent" />
+					</div>
+					<div style="width: 50px; font-weight: bold;">Silent</div>
+				</label>
+			</div>
+			
+			<div class="big-font" style="font-weight: bold;">
+				Cache & storage
+			</div>
+			<div style="margin-left: 16px;">
+				All privacy policy summaries from the server are cached.
+				If a website updates its policy, the updated summary
+				will only be seen after the old chached summary
+				expires.
+				<!-- <br />
+				The expired summary is moved to long-term storage, to be
+				compared to the next summary from the server to notify
+				on policy updates. -->
+				<br />
+				Clear the cache to load up-to-date summaries for all websites. 
+			</div>
+			
+			<div style="align-self: center;">
+				<button id="clear_cache" style="height: 80px; width: 120px; border-radius: 10px; overflow: hidden;">
+					<!-- due to `box-sizing: border-box;`, children with
+						width=height=100% will overflow (since the dims
+						include the border).
+						using `flex: 1` solves this, but it doesn't work for
+						the second child (even if it's absoluse). so we use
+						an itnermediate container with `flex: 1` . -->
+					<div style="flex: 1; align-self: stretch; position: relative;">
+						<div id="clear_cache_progress_cont" style="height: 100%; width: 100%;"></div>
+						<div class="flex-col" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%;">
+							<span class="big-font" style="font-weight: bolder;">CLEAR CACHE</span>
+							<span id="clear_cache_time" style="font-size: 10px;"></span>
+						</div>
+					</div>
+				</button>
+				<span id="cache_cleared_message" style="font-size: 10px; opacity: 0;">Cache cleared!</span>
+			</div>
+			
+		</div>
+		
+		<div class="flex-col verti-spaced" style="padding: 32px; align-items: start;">
+			<div class="big-font" style="font-weight: bold;">Hi there!</div>
+			We're a group of 3 students (...).
+			We created this extension for a workshop class on security and privacy
+			usability, with the goal of increasing accessibility of privacy
+			policies to userto raise awareness to them.
+			Icon credits:
+			<a href="https://www.flaticon.com/free-icons/marker" title="marker icons">Marker icons created by Freepik - Flaticon</a>
+			Font credit:
+			Preliminary works:
+			<!-- Github link: https://github.com/DNekrassov/PrivacyHighlighters -->
+		</div>
+	
+	</div>
+	
+</body>
+</html>

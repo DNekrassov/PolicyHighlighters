@@ -1,0 +1,25 @@
+{
+	"row_order": [
+		{"key": "contacts",         "prompt": "________", "shown": "Contacts"},
+		{"key": "cookies",          "prompt": "________", "shown": "Cookies"},
+		{"key": "demographics",     "prompt": "________", "shown": "Demographics"},
+		{"key": "financial_info",   "prompt": "________", "shown": "Financial info"},
+		{"key": "health_info",      "prompt": "________", "shown": "Health info"},
+		{"key": "preferences",      "prompt": "________", "shown": "Preferences"},
+		{"key": "purchases",        "prompt": "________", "shown": "Purchases"},
+		{"key": "credit_card_info", "prompt": "________", "shown": "Credit card info"},
+		{"key": "social_security",  "prompt": "________", "shown": "Social security"},
+		{"key": "gov_id",           "prompt": "________", "shown": "Gov. ID"},
+		{"key": "site_activity",    "prompt": "________", "shown": "Site activity"},
+		{"key": "location",         "prompt": "________", "shown": "Location"}
+	],
+	
+	"col_order": [
+		{"key": "service",         "prompt": "________", "shown": "Service"},
+		{"key": "maintenance",     "prompt": "________", "shown": "Maintenance"},
+		{"key": "marketing",       "prompt": "________", "shown": "Marketing"},
+		{"key": "profiling",       "prompt": "________", "shown": "Profiling"},
+		{"key": "other_companies", "prompt": "________", "shown": "Companies"},
+		{"key": "public_forums",   "prompt": "________", "shown": "Forums"}
+	]
+}
