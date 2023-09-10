@@ -1,5 +1,5 @@
-from PrivacyHighlighter import db
-from PrivacyHighlighter.config import DEFAULT_JSON
+from PolicyHighlighter import db
+from PolicyHighlighter.config import DEFAULT_JSON
 
 
 class Policy(db.Model):
@@ -53,5 +53,5 @@ class Priva(db.Model):
 def init_db(app):
     with app.app_context():
         db.create_all()
-        from PrivacyHighlighter.utils import load_meta_data
+        from PolicyHighlighter.utils import load_meta_data
         load_meta_data()

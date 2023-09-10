@@ -6,10 +6,10 @@ import flask
 import tldextract
 from werkzeug.serving import is_running_from_reloader
 
-from PrivacyHighlighter.db_models import Policy, Meta, Priva
-from PrivacyHighlighter import db
-from PrivacyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSON
-from PrivacyHighlighter.status import Status
+from PolicyHighlighter.db_models import Policy, Meta, Priva
+from PolicyHighlighter import db
+from PolicyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSON
+from PolicyHighlighter.status import Status
 
 
 def check_policy_by_url(policy_url):
