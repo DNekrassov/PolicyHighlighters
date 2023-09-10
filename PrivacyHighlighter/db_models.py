@@ -10,8 +10,8 @@ class Policy(db.Model):
     has_result = db.Column(db.Boolean, default=False)
     gpt_result = db.Column(db.JSON, nullable=True, default=DEFAULT_JSON)
     #test = db.Column(db.Boolean, default=True)  # We'll change the default to False once we start doing real stuff
-    timestamp = db.Column(db.String, nullable=False)
-    probability = db.Column(db.Float, nullable=False)
+    timestamp = db.Column(db.String, nullable=False, default="")
+    probability = db.Column(db.Integer, nullable=False, default=0)
 
     def __init__(self, **kwargs):
         super(Policy, self).__init__(**kwargs)
@@ -26,7 +26,7 @@ class Policy(db.Model):
 
     def update_meta_info(self, timestamp, probability):
         self.timestamp = timestamp
-        self.probability = probability
+        self.probability = int(probability*100)
 
     def update_gpt_result(self, result):
         self.gpt_result = result
