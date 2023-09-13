@@ -1,7 +1,8 @@
 var Common = {
-	// palceholders
+	// palceholders, will be read from table_config.json
 	row_order: null,
 	col_order: null,
+	val_nums: null,
 	
 	get_domain(url_str) {
 		try {
@@ -32,25 +33,32 @@ var Common = {
 		return arr.reduce((partial_sum, val) => partial_sum + f(val), 0);
 	},
 	
-	get_max_table_sum(weights) {
+	get_max_score(weights) {
 		return this.sum(weights.rows) *
 			this.sum(weights.cols) *
-			weights.vals[3];
+			weights.vals[weights.vals.length - 1];
 	},
 	
 	get_grade(table, settings) {
-		var weights = settings['.weights'];
-		var sum = 0;
+		// copy. if all weights are zeros replace then with ones
+		var weights = {};
+		for (let key of ['rows', 'cols', 'vals']) {
+			weights[key] = settings['.weights'][key];
+			if (weights[key].every(w => w == 0))
+				 weights[key] = weights[key].map(w => 1);
+		}
+		
+		var score = 0;
 		table.forEach((row, i) => {
 			row.forEach((val, j) => {
-				sum += weights.rows[i] * weights.cols[j] * weights.vals[val];
+				score += weights.rows[i] * weights.cols[j] * weights.vals[val];
 			});
 		});
-		var numeric_grade = sum / this.get_max_table_sum(weights);
+		var norm_score = score / this.get_max_score(weights);
 		var grade = (
-			numeric_grade < 0.25 ? 'a' :
-			numeric_grade < 0.50 ? 'b' :
-			numeric_grade < 0.75 ? 'c' :
+			norm_score < 0.25 ? 'a' :
+			norm_score < 0.50 ? 'b' :
+			norm_score < 0.75 ? 'c' :
 			'd'
 		);
 		
@@ -60,7 +68,7 @@ var Common = {
 	matrixfy_table(table) {
 		return Common.row_order.map(
 			row => Common.col_order.map(
-				col => table[row.key][col.key]
+				col => Common.val_nums[table[row.key][col.key]]
 			)
 		);
 	},
@@ -85,7 +93,7 @@ var Common = {
 			'.weights': {
 				'rows': Array(Common.row_order.length).fill(1),
 				'cols': Array(Common.col_order.length).fill(1),
-				'vals': [0, 0.2, 0.7, 1]
+				'vals': [0, 0.2, 0.3, 0.7, 1]
 			}
 		});
 	},

@@ -324,7 +324,6 @@ Object.assign(CarpoolRequest.prototype, {
 		var self = this;
 		
 		if (this.res_json.table) {
-			console.log(JSON.stringify(this.res_json.table));
 			this.grade = Common.get_grade(
 				Common.matrixfy_table(this.res_json.table),
 				this.settings
