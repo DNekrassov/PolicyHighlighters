@@ -111,14 +111,12 @@ var Summary = {
 			Summary.edit_mode = edit_mode_checkbox.checked;
 			Summary.load();
 			if (Summary.edit_mode) {
+				Elems.edit_info_box.classList.remove('hidden');
 				Elems.tables.classList.add('edited');
-				Elems.val_weights.classList.add('edited');
-				Elems.val_weights.classList.remove('hidden');
 			}
 			else {
+				Elems.edit_info_box.classList.add('hidden');
 				Elems.tables.classList.remove('edited');
-				Elems.val_weights.classList.remove('edited');
-				Elems.val_weights.classList.add('hidden');
 			}
 		});
 	},
@@ -157,6 +155,7 @@ var Summary = {
 		if (isNaN(num) || num < 0)
 			weight.value = '0';
 	},
+	
 	update_weights() {
 		Common.get_settings().then(settings => {
 			settings['.weights'].rows = Summary.get_row_weights().map(
@@ -168,16 +167,31 @@ var Summary = {
 			settings['.weights'].vals = Summary.get_val_weights().map(
 				weight => Number(weight.value)
 			);
-			console.log(settings['.weights'])
 			Summary.set_grade(settings);
 			return chrome.storage.local.set(settings);
 		})
 	},
 	
 	set_grade(settings) {
-		var grade = Common.get_grade(this.res_json.table, settings);
+		var scores = Common.calc_scores(this.res_json.table, settings);
+		
 		Elems.grade.classList.remove('a', 'b', 'c', 'd');
-		Elems.grade.classList.add(grade);
+		Elems.grade.classList.add(scores.grade);
+		
+		// print up to 3 decimal places, and trim trailing zeros.
+		var repr = (Math.round(scores.max_score * 1000) / 1000).toFixed(3);
+		for (let i = repr.length - 1; i >= 0 ; i--) {
+			if (repr[i] == '0')
+				continue;
+			if (repr[i] == '.')
+				repr = repr.slice(0, i);
+			else
+				repr = repr.slice(0, i + 1);
+			break;
+		}
+		
+		Elems.max_score.innerText = repr;
+		Elems.norm_score.innerText = Math.round(100 * scores.norm_score) + '%';
 	},
 	
 	load() {

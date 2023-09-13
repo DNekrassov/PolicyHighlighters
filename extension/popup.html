@@ -78,7 +78,9 @@
 		.horiz-spaced > *:not(:last-child) { margin-right: 16px; }
 		
 		
-		label:not(.cell:not(:has(input[name=edit_mode]))),
+		/* pointer for all labels that are not cells,
+		and for cells ONLY if the have .weight-input */
+		label:not(.cell),
 		.edited .cell:has(.weight-input) {
 			cursor: pointer;
 		}
@@ -594,38 +596,57 @@
 			<!-- table page -->
 			<div class="flex-col" style="padding: 32px 16px;">
 				
-				<div class="flex-row" style="width: 340px; text-align: center; margin-bottom: 32px;">
-					<b style="font-size: 14px; margin-right: 6px;">Match confidence:</b>
-					<b id="confidence" style="font-size: 16px;"></b>
-					<span style="font-size: 14px;">%</span>
+				<div class="flex-row" style="width: 420px; justify-content: space-between;">
+					<label class="flex-row horiz-spaced">
+						<div class="input">
+							<input type="checkbox" name="edit_mode" />
+						</div>
+						<div style="font-weight: bold;">Edit</div>
+					</label>
 					
-					<b style="font-size: 14px; margin-left: 30px; margin-right: 10px;">Policy grade:</b>
-					<div id="grade" class="grade"></div>
+					<div class="flex-row">
+						<b style="font-size: 14px; margin-right: 6px;">Match confidence:</b>
+						<b id="confidence" style="font-size: 16px;"></b>
+						<span style="font-size: 14px;">%</span>
+					</div>
+					
+					<div class="flex-row">
+						<b style="font-size: 14px; margin-right: 10px;">Policy grade:</b>
+						<div id="grade" class="grade"></div>
+					</div>
 				</div>
 				
-				<div id="val_weights" class="flex-col verti-spaced hidden" style="width: 500px; margin-bottom: 32px;">
-					<div style="text-align: center;">
-						Customize the weights (Wt.) of cell values, rows, and
-						columns to tweak the policy grade's formula.
+				<div id="edit_info_box" class="hidden edited flex-col" style="margin-top: 16px;">
+					<div class="dim flex-row" style="width: 320px; margin-bottom: 32px;">
+						<b style="margin-right: 6px;">Max score:</b>
+						<div id="max_score" style="flex: 1;"></div>
+						
+						<b style="margin-left: 20px; margin-right: 6px;">Policy score: </b>
+						<span id="norm_score" style="width: calc(31px + 4px);"></span>
+						<span>of max score<span>
 					</div>
-					<div style="text-align: center;">
-						Each cell is given a score, which is its value's
-						weight multiplied by the weight of its row and
-						the weight of its column.
-						The sum of all cells' scores is the policy's
-						score.
+					
+					<div class="flex-col verti-spaced" style="width: 500px; margin-bottom: 32px;">
+						<div style="text-align: center;">
+							Edit the weights (Wt.) of cell values, rows, and
+							columns in the policy grade's formula.
+						</div>
+						<div style="text-align: center;">
+							Each cell is given a score, which is its value's
+							weight multiplied by the weight of its row and
+							the weight of its column.
+							The sum of all cells' scores is the policy's
+							score.
+						</div>
+						<div style="text-align: center;">
+							The grade is the decided by how big the
+							policy's score is compared to the maximal
+							policy score (= the score of a table that's
+							filled with the maximal-weight cell value)
+						</div>
 					</div>
-					<div style="text-align: center;">
-						The grade is the decided by the policy's score
-						relative to the maximum policy score (= the table's score when
-						it only contains "used" cells):
-					</div>
-					<div style="text-align: center;">
-						The grade is the decided by the policy's score
-						relative to the maximum policy score (= the table's score when
-						it only contains "used" cells):
-					</div>
-					<div style="width: 400px; display: flex; flex-direction: row; justify-content: space-around;">
+					
+					<div id="val_weights" class="flex-row" style="width: 400px; justify-content: space-around;">
 						<!-- this is here just so coutneing starts at index 1 -->
 						<label class="cell uncollected hidden">
 							<div>uncollected</div>
@@ -651,17 +672,12 @@
 					</div>
 				</div>
 				
-				<div id="tables" style="margin-bottom: 16px;">
+				<div id="tables" style="margin: 32px 0 16px;">
 					<div class="table">
 						<!-- dummy elements to take up the brace row and
 							header cell row just like tables 1 and 2 -->
 						<div class="row">
-							<label class="cell header" style="flex-direction: row;">
-								<div class="input" style="margin-right: 8px;">
-									<input type="checkbox" name="edit_mode" />
-								</div>
-								<div style="width: 50px; font-weight: bold;">Edit mode</div>
-							</label>
+							<div class="cell header"></div>
 						</div>
 						<div class="braces" style="opacity: 0;">0</div>
 					</div>
@@ -704,18 +720,18 @@
 						<div class="flex-col verti-spaced" style="align-self: flex-end; align-items: stretch;">
 							<div style="height: 0;"></div> <!-- a dummy to force spacing -->
 							<div style="display: flex; flex-direction: row; justify-content: space-around;">
-								<label class="cell unused">
+								<div class="cell unused">
 									<div>-</div>
-								</label>
-								<label class="cell opt-in">
+								</div>
+								<div class="cell opt-in">
 									<div>opt in</div>
-								</label>
-								<label class="cell opt-out">
+								</div>
+								<div class="cell opt-out">
 									<div>opt out</div>
-								</label>
-								<label class="cell used">
+								</div>
+								<div class="cell used">
 									<div>used</div>
-								</label>
+								</div>
 							</div>
 							<div style="display: flex; flex-direction: row; justify-content: space-around;">
 								<div style="width: 78px;">This website doesn't use your data this way. However, it still collects it.</div>
@@ -861,6 +877,7 @@
 			<div class="big-font" style="font-weight: bold;">
 				Hi there!
 			</div>
+			
 			<div class="verti-spaced" style="padding-left: 16px;">
 				<div>
 					We're a group of 3 computer science students from
@@ -869,25 +886,20 @@
 				</div>
 				<div>
 					We were tasked with using OpenAI's GPT models to
-					summarize websites' privacy policies and make as accessible as
-					possible to the average internet user.
-					We aim that it will raise the users' awareness to
-					the data collection practices of their websites they
-					browse, and possibly change their browsing habits.
+					summarize websites' privacy policies and make as
+					accessible as possible to the average internet user.
+				</div>
+				<div>
+					Our goal is to raise the users' awareness to
+					website's data collection practices, and possibly
+					change their browsing habits.
 				</div>
 			</div>
 			
 			<div class="big-font" style="font-weight: bold;">
-				Preliminary works
-			</div>
-			<div style="padding-left: 16px;">
-				<div>(link 1)</div>
-				<div>(link 2)</div>
+				External resource credits
 			</div>
 			
-			<div class="big-font" style="font-weight: bold;">
-				External resources
-			</div>
 			<div style="padding-left: 16px;">
 				<div>
 					<a href="https://www.flaticon.com/free-icons/marker" title="marker icons">
@@ -900,6 +912,33 @@
 					</a>
 				</div>
 			</div>
+			
+			<!-- <div class="big-font" style="font-weight: bold;">
+				Preliminary works
+			</div>
+			
+			<div class="verti-spaced" style="padding-left: 16px;">
+				<div>
+					<a href="https://www.ftc.gov/sites/default/files/documents/public_comments/privacy-roundtables-comment-project-no.p095416-544506-00037/544506-00037.pdf">
+						P. G. Kelley, L. Cesca, J. Bresee, and L. F. Cranor. Standardizing privacy notices: an online study of the nutrition label approach. In Proceedings of CHI, 2010
+					</a>
+				</div>
+				<div>
+					<a href="https://www.usenix.org/system/files/conference/soups2015/soups15-paper-schaub.pdf">
+						F. Schaub, R. Balebako, A. L. Durity, and L. F. Cranor. A design space for effective privacy notices. 2015
+					</a>
+				</div>
+				<div>
+					<a href="https://dl.acm.org/doi/pdf/10.1145/3230665">
+						S. Wilson, F. Schaub, F. Liu, K. M. Sathyendra, D. Smullen, S. Zimmeck, R. Ramanath, P. Story, F. Liu, N. Sadeh, et al. Analyzing privacy policies at scale: From crowdsourcing to automated annotations. ACM Transactions on the Web (TWEB), 13(1):1–29, 2018
+					</a>
+				</div>
+				<div>
+					<a href="https://www.usenix.org/system/files/conference/usenixsecurity14/sec14-paper-zimmeck.pdf">
+						S. Zimmeck and S. M. Bellovin. Privee: An architecture for automatically analyzing web privacy policies. In Proceedings of USENIX Security, 2014
+					</a>
+				</div>
+			</div> -->
 		</div>
 	
 	</div>

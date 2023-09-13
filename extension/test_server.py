@@ -4,20 +4,22 @@ import time
 import json
 
 table = {
-	"table": {
-		"contacts":         { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"cookies":          { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"demographics":     { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"financial_info":   { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"health_info":      { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"preferences":      { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"purchases":        { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"credit_card_info": { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"social_security":  { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"gov_id":           { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"site_activity":    { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-		"location":         { "service": "uncollected", "maintenance": "unused", "marketing": "opt in", "profiling": "opt out", "other_companies": "used", "public_forums": "used" },
-	},
+	
+	
+	# "table": {
+	# 	"contacts": {"service": "unused", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"},
+	# 	"cookies": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"demographics": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"health_info": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"preferences": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"purchases": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"credit_card_info": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"social_security": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"},
+	# 	"site_activity": {"service": "uncollected", "maintenance": "uncollected", "marketing": "uncollected", "profiling": "uncollected", "other_companies": "uncollected", "public_forums": "uncollected"}
+	# },
+	
+	# facebook!
+	"table": {"contacts": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "cookies": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "demographics": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "health_info": {"service": "unused", "maintenance": "opt out", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "unused"}, "preferences": {"service": "opt out", "maintenance": "used", "marketing": "used", "profiling": "opt out", "other_companies": "opt out", "public_forums": "opt in"}, "purchases": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "credit_card_info": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "social_security": {"service": "used", "maintenance": "used", "marketing": "unused", "profiling": "used", "other_companies": "used", "public_forums": "used"}, "site_activity": {"service": "used", "maintenance": "used", "marketing": "used", "profiling": "used", "other_companies": "used", "public_forums": "used"}},
 	"domain": "web.whatsapp.com",
 	"creation_time": "1970-01-01 00:00:00",
 	"code": 0,
