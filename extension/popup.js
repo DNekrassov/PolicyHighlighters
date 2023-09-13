@@ -21,14 +21,16 @@ var Summary = {
 	
 	ROW_OFFSET: 2,
 	
+	cell_classes: ['uncollected', 'unused', 'opt-in', 'opt-out', 'used'],
+	
 	cell_texts: {
+		'uncollected': 'uncollected',
 		'unused': '-',
 		'opt-in': 'opt in',
 		'opt-out': 'opt out',
 		'used': 'used'
 	},
 	
-	cell_classes: ['unused', 'opt-in', 'opt-out', 'used'],
 	
 	create_cell(cls, text, with_weight) {
 		var cell = document.createElement('label');
@@ -42,10 +44,10 @@ var Summary = {
 		if (with_weight) {
 			var textbox = document.createElement('input');
 			textbox.type = 'text';
-			var weight = document.createElement('div');
-			weight.classList.add('weight-input', 'weight');
-			weight.append(textbox);
-			cell.append(weight);
+			var weight_input = document.createElement('div');
+			weight_input.classList.add('weight-input');
+			weight_input.append(textbox);
+			cell.append(weight_input);
 		}
 		
 		return cell;
@@ -77,31 +79,39 @@ var Summary = {
 				row.remove();
 	},
 
-	show_table() {
-		this.page_group.select(0);
-	},
-	
 	show_message(title, body) {
 		Elems.message_title.innerText = title;
 		Elems.message_body.innerText = body;
+		this.page_group.select(0);
+	},
+	
+	show_table() {
 		this.page_group.select(1);
 	},
 	
 	init() {
-		for (let {shown} of Common.row_order) {
+		for (let {shown, prompt} of Common.row_order) {
 			var row = this.create_row([]);
-			row.append(this.create_cell('header', shown, true));
+			var cell = this.create_cell('header', shown, true)
+			cell.title = prompt;
+			row.append(cell);
 			Elems.tables.children[0].append(row);
 		}
 		
 		var row = this.create_row([]);
-		for (let {shown} of Common.col_order.slice(0, 4))
-			row.append(this.create_cell('header', shown, true));
+		for (let {shown, prompt} of Common.col_order.slice(0, 4)) {
+			var cell = this.create_cell('header', shown, true);
+			cell.title = prompt;
+			row.append(cell);
+		}
 		Elems.tables.children[1].append(row);
 		
 		var row = this.create_row([]);
-		for (let {shown} of Common.col_order.slice(4, 6))
-			row.append(this.create_cell('header', shown, true));
+		for (let {shown, prompt} of Common.col_order.slice(4, 6)) {
+			var cell = this.create_cell('header', shown, true);
+			cell.title = prompt;
+			row.append(cell);
+		}
 		Elems.tables.children[2].append(row);
 		
 		var edit_mode_checkbox = document.querySelector('[name=edit_mode]');
@@ -109,14 +119,12 @@ var Summary = {
 			Summary.edit_mode = edit_mode_checkbox.checked;
 			Summary.load();
 			if (Summary.edit_mode) {
+				Elems.edit_info_box.classList.remove('hidden');
 				Elems.tables.classList.add('edited');
-				Elems.val_weights.classList.add('edited');
-				Elems.val_weights.classList.remove('hidden');
 			}
 			else {
+				Elems.edit_info_box.classList.add('hidden');
 				Elems.tables.classList.remove('edited');
-				Elems.val_weights.classList.remove('edited');
-				Elems.val_weights.classList.add('hidden');
 			}
 		});
 	},
@@ -135,7 +143,6 @@ var Summary = {
 	},
 	
 	init_weights(weights) {
-		console.log(weights);
 		var pairs = [
 			[this.get_row_weights(), weights.rows],
 			[this.get_col_weights(), weights.cols],
@@ -156,6 +163,7 @@ var Summary = {
 		if (isNaN(num) || num < 0)
 			weight.value = '0';
 	},
+	
 	update_weights() {
 		Common.get_settings().then(settings => {
 			settings['.weights'].rows = Summary.get_row_weights().map(
@@ -167,16 +175,31 @@ var Summary = {
 			settings['.weights'].vals = Summary.get_val_weights().map(
 				weight => Number(weight.value)
 			);
-			console.log(settings['.weights'])
 			Summary.set_grade(settings);
 			return chrome.storage.local.set(settings);
 		})
 	},
 	
 	set_grade(settings) {
-		var grade = Common.get_grade(this.res_json.table, settings);
+		var scores = Common.calc_scores(this.res_json.table, settings);
+		
 		Elems.grade.classList.remove('a', 'b', 'c', 'd');
-		Elems.grade.classList.add(grade);
+		Elems.grade.classList.add(scores.grade);
+		
+		// print up to 3 decimal places, and trim trailing zeros.
+		var repr = (Math.round(scores.max_score * 1000) / 1000).toFixed(3);
+		for (let i = repr.length - 1; i >= 0 ; i--) {
+			if (repr[i] == '0')
+				continue;
+			if (repr[i] == '.')
+				repr = repr.slice(0, i);
+			else
+				repr = repr.slice(0, i + 1);
+			break;
+		}
+		
+		Elems.max_score.innerText = repr;
+		Elems.norm_score.innerText = Math.round(100 * scores.norm_score) + '%';
 	},
 	
 	load() {
@@ -190,28 +213,22 @@ var Summary = {
 			else {
 				Summary.clear_table();
 		
+				var uncollected_list = [];
 				var unused_list = [];
 				Summary.res_json.table.forEach((row, i) => {
 					Summary.add_entry(row);
-					if (row.every(val => val == 0)) {
-						unused_list.push(Common.row_order[i].shown);
+					if (row.every(val => val < 2)) {
+						if (row.every(val => val == 0))
+							uncollected_list.push(Common.row_order[i].shown);
+						else
+							unused_list.push(Common.row_order[i].shown);
 						for (let table of Elems.tables.children)
 							table.children[Summary.ROW_OFFSET + i].classList.add('empty');
 					}
 				});
 				
-				// Common.row_order[i].forEach((row_config, i) => {
-				// 	var row = Summary.res_json.table[row_config.key];
-				// 	var vals = Common.col_order.map({key} => row[key]);
-				// 	Summary.add_entry(vals);
-					
-				// 	if (Object.values(vals).every(val => val == 0)) {
-				// 		unused_list.push(row_config.shown);
-				// 		for (let table of Elems.tables.children)
-				// 			table.children[Summary.ROW_OFFSET + i].classList.add('empty');
-				// 	}
-				// })
-				
+				Elems.uncollected.innerText = uncollected_list.length ?
+					uncollected_list.join(', ') : '-';
 				Elems.unused.innerText = unused_list.length ?
 					unused_list.join(', ') : '-';
 					
@@ -264,8 +281,11 @@ var Summary = {
 				// );
 				Summary.res_json = summary.res_json;
 				Summary.status = summary.status;
-				Summary.res_json.table = Common.matrixfy_table(Summary.res_json.table);
-				Summary.load();
+				settings_init_promise.then(() => {
+					if (Summary.res_json.table)
+						Summary.res_json.table = Common.matrixfy_table(Summary.res_json.table);
+					Summary.load();
+				});
 			});
 			
 			cur_tab_promise.then(cur_tab => {
@@ -277,6 +297,7 @@ var Summary = {
 		});
 	}
 };
+
 
 
 
@@ -497,7 +518,7 @@ function clear_cache_button_init() {
 				i--;
 			}
 			else {
-				Common.clear_cache();
+				Common.inc_cache_counter();
 				cancel();
 				
 				Elems.cache_cleared_message.style.transition = 'none';
@@ -528,7 +549,7 @@ function onload() {
 	for (let elem of document.querySelectorAll('[id]'))
 		Elems[elem.id] = elem;
 	
-	Summary.page_group = new PageGroup(Elems.summary_pages, 0);
+	Summary.page_group = new PageGroup(Elems.summary_pages, 1);
 	init_menu();
 	clear_cache_button_init();
 	
@@ -541,7 +562,7 @@ function onload() {
 	);
 	
 	settings_init_promise = Common.init().then(() => {
-		Summary.init();
+		Summary.init()
 		return Common.get_settings();
 	}).then(settings => {
 		settings_init(settings);

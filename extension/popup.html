@@ -15,13 +15,16 @@
 			src: url('Coda/Coda-Regular.ttf');
 		}
 		
-		html {
-			max-height: 750px;
-		}
+
+
+		
+
 		html, body {
 			margin: 0;
 		}
 		body {
+			width: 580px;
+			user-select: none;
 			color: #f0f0f0;
 			background-color: #202020;
 			border: 1px solid #505050;
@@ -75,7 +78,9 @@
 		.horiz-spaced > *:not(:last-child) { margin-right: 16px; }
 		
 		
-		label:not(.cell:not(:has(input[name=edit_mode]))),
+		/* pointer for all labels that are not cells,
+		and for cells ONLY if the have .weight-input */
+		label:not(.cell),
 		.edited .cell:has(.weight-input) {
 			cursor: pointer;
 		}
@@ -232,7 +237,8 @@
 			justify-content: center;
 			text-align: center;
 			width: 70px;
-			padding: 14px 4px;
+			height: 40px;
+/*			padding: 14px 4px;*/
 			margin-left: 8px;
 			position: relative;
 		}
@@ -255,7 +261,24 @@
 			background: linear-gradient(#80c0ff00, #80c0ff);
 		}
 		
-		
+		#pages {
+			/*
+			for whatever reason, applying these 2 attributes to each
+			individual page wouldn't work cuz they're flexboxes - it
+			clashes with max-height allegedly, which makes me unable to
+			scroll all the way to their top.
+			adding a wrapper with these 2 attrs around the pages seems
+			to work. since #pages is their lowest common container (and
+			it's not a flexbox), i added them to it instead. 
+			note: overflow: auto is crucial to make the page scroll!
+			otherwise the page gets as big as it wants to be, which
+			makes the body overflow and scroll!
+			*/
+			/* max page height = 600px max popup height
+			- 2px body border - 60px header height */
+			max-height: calc(600px - 2px - 60px);
+			overflow: auto;
+		}
 		#pages > * {
 			background: linear-gradient(#505050, #202020 80px);
 		}
@@ -309,7 +332,7 @@
 		}
 		
 		.cell.header {
-			border-color: #f0f0f0;
+			border-color: #f0f0f0; /* <-- for .weight-box */
 			border-width: 0;
 			font-weight: bold;
 		}
@@ -317,6 +340,24 @@
 		
 		
 		
+		.cell.uncollected {
+			box-shadow: none;
+			border-width: 0;
+			background-color: transparent;
+			border-color: #d0d0d0;
+			color: #d0d0d0;
+		}
+		
+		::-webkit-scrollbar {
+			background: transparent;
+			width: 8px;
+		}
+		
+		::-webkit-scrollbar-thumb {
+			border-radius: 4px;
+			border-style: solid;
+			border-width: 1px;
+		}
 		
 		.cell.unused,
 		.grade.a,
@@ -328,8 +369,15 @@
 			border-color: #80c0ff;
 			color: #80c0ff;
 		}
-		#clear_cache .clear_cache_progress { background-color: #80c0ff40; }
+		#clear_cache .clear_cache_progress {
+			background-color: #80c0ff40;
+		}
 		a, a:visited { color: #80c0ff; }
+		::-webkit-scrollbar-thumb {
+			background-color: #80c0ff80;
+			border-color: #80c0ff;
+			color: #80c0ff;
+		}
 		
 		#clear_cache {
 			transition:
@@ -338,6 +386,7 @@
 				border-color 0.5s linear,
 				color 0.5s linear;
 		}
+		
 		#clear_cache:not(.held):hover,
 		a:hover, a:visited:hover,
 		label:hover .input,
@@ -358,7 +407,11 @@
 			border-color: #a0d0ff;
 			color: #a0d0ff;
 		}
-		
+		::-webkit-scrollbar-thumb:hover {
+			background-color: #a0e0ff80;
+			border-color: #a0d0ff;
+			color: #a0d0ff;
+		}
 		
 		.cell.opt-out,
 		.grade.c {
@@ -418,16 +471,7 @@
 			border-style: solid;
 		}
 		.weight-input:before {
-/*			margin-right: 4px;*/
-		}
-		.weight-input.weight:before {
 			content: "Wt. ";
-		}
-		.weight-input.severity:before {
-			content: "Sev.";
-		}
-		.weight-input.severity:after {
-			content: "%";
 		}
 		
 		.weight-input input {
@@ -437,11 +481,8 @@
 			border-width: 0 0 1px;
 			border-color: transparent;
 		}
-		.weight-input.weight input {
+		.weight-input input {
 			width: 24px;
-		}
-		.weight-input.severity input {
-			width: 20px;
 		}
 		label:hover .weight-input,
 		.weight-input:has(input:focus) {
@@ -462,7 +503,7 @@
 		.edited .cell {
 			height: 44px;
 		}
-		#tables.edited .cell:is(.unused, .opt-in, .opt-out, .used) {
+		#tables.edited .cell:is(.uncollected, .unused, .opt-in, .opt-out, .used) {
 			opacity: 0.5;
 		}
 		
@@ -530,60 +571,105 @@
 		
 	</div>
 	
-	<div id="pages" style="width: 580px;">
+	<div id="pages">
 		
-		<div id="summary_pages" style="padding: 32px 16px;">
+		<div id="summary_pages" >
+			
+			<!-- message page -->
+			<div class="flex-col verti-spaced" style="height: 200px; padding: 32px;">
+				<b id="message_title" class="big-font"></b>
+				<span id="message_body" style="text-align: center; width: 400px;"></span>
+			</div>
 			
 			<!-- table page -->
-			<div class="flex-col">
+			<div class="flex-col" style="padding: 32px 16px;">
 				
-				<div class="flex-row" style="width: 340px; text-align: center; margin-bottom: 32px;">
-					<b style="margin-right: 6px;">Match confidence:</b>
-					<b id="confidence" class="big-font"></b><span>%</span>
+				<div class="flex-row" style="width: 420px; justify-content: space-between;">
+					<label class="flex-row horiz-spaced">
+						<div class="input">
+							<input type="checkbox" name="edit_mode" />
+						</div>
+						<div style="font-weight: bold;">Edit</div>
+					</label>
 					
-					<b style="margin-left: 30px; margin-right: 10px;">Policy grade:</b>
-					<div id="grade" class="grade"></div>
+					<div class="flex-row">
+						<b style="font-size: 14px; margin-right: 6px;">Match confidence:</b>
+						<b id="confidence" style="font-size: 16px;"></b>
+						<span style="font-size: 14px;">%</span>
+					</div>
+					
+					<div class="flex-row">
+						<b style="font-size: 14px; margin-right: 10px;">Policy grade:</b>
+						<div id="grade" class="grade"></div>
+					</div>
 				</div>
 				
-				<div id="val_weights" class="flex-col verti-spaced hidden" style="margin-bottom: 32px;">
-					<div style="text-align: center;">
-						In edit mode, you can customize the weights (Wt.)
-						of cell values to decide their severity, and the
-						weights of the table's columnsand rows to decide their relative importance.
-						<br />
-						These will only affect the result of the summary's grade. 
+				<div id="edit_info_box" class="hidden edited flex-col" style="margin-top: 16px;">
+					<div class="dim flex-row" style="width: 340px; margin-bottom: 32px;">
+						<b style="margin-right: 6px;">Max score:</b>
+						<div id="max_score" style="flex: 1; overflow-x: hidden; text-overflow: ellipsis;"></div>
+						
+						<b style="margin-left: 20px; margin-right: 6px;">Policy score: </b>
+						<span id="norm_score" style="width: calc(31px + 4px);"></span>
+						<span>of max score<span>
 					</div>
-					<div style="width: 400px; display: flex; flex-direction: row; justify-content: space-around;">
+					
+					<div class="flex-col verti-spaced" style="width: 500px; margin-bottom: 32px;">
+						<div style="text-align: center;">
+							Edit the weights (Wt.) of cell values, rows, and
+							columns in the policy grade's formula.
+						</div>
+						<div style="text-align: center;">
+							Each cell is given a score, which is its value's
+							weight multiplied by the weight of its row and
+							the weight of its column.
+							The sum of all cells' scores is the policy's
+							score.
+						</div>
+						<div style="text-align: center;">
+							The grade is the decided by how big the
+							policy's score is compared to the maximal
+							policy score (= the score of a table that's
+							filled with the maximal-weight cell value).
+						</div>
+					</div>
+					
+					<div id="val_weights" class="flex-row" style="width: 400px; justify-content: space-around;">
+						<!-- this is here just so coutneing starts at index 1 -->
+						<label class="cell uncollected hidden">
+							<div>uncollected</div>
+							<div class="weight-input"><input type="text" /></div>
+						</label>
+						
 						<label class="cell unused">
 							<div>-</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell opt-in">
 							<div>opt in</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell opt-out">
 							<div>opt out</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell used">
 							<div>used</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 					</div>
 				</div>
 				
-				<div id="tables" style="margin-bottom: 16px;">
+				<div class="dim" style="margin-top: 32px;">
+					<b>Tip:</b> hover over the row and column headers to
+					learn more
+				</div>
+				<div id="tables" style="margin: 16px 0;">
 					<div class="table">
 						<!-- dummy elements to take up the brace row and
 							header cell row just like tables 1 and 2 -->
 						<div class="row">
-							<label class="cell header" style="flex-direction: row;">
-								<div class="input" style="margin-right: 8px;">
-									<input type="checkbox" name="edit_mode" />
-								</div>
-								<div style="width: 50px; font-weight: bold;">Edit mode</div>
-							</label>
+							<div class="cell header"></div>
 						</div>
 						<div class="braces" style="opacity: 0;">0</div>
 					</div>
@@ -595,12 +681,24 @@
 					</div>
 				</div>
 				
-				<div class="dim" style="width: 340px; text-align: center; margin-bottom: 32px;">
-					<b>Uncollected data:</b> <span id="unused"></span>
+				<div class="dim flex-row" style="width: 450px; margin-bottom: 32px;">
+					<div class="flex-col" style="flex: 1;">
+						<div style="justify-content: center; font-weight: bold;">
+							Uncollected data:
+						</div>
+						<div id="uncollected" style="text-align: center;"></div>
+					</div>
+					<div style="width: 40px;"></div>
+					<div class="flex-col" style="flex: 1;">
+						<div style="justify-content: center; font-weight: bold;">
+							Unused collected data:
+						</div>
+						<div id="unused" style="text-align: center;"></div>
+					</div>
 				</div>
 				
 				<!-- a wrapper for the legend button & box, to not add a space after the button -->
-				<div class="flex-col" style="">
+				<div class="flex-col">
 					<div id="legend_wings" class="wings braces" style="width: 380px;">
 						<button id="legend_button">
 							<b>Legend</b>
@@ -612,23 +710,23 @@
 						so overflow crops it at the top (to make the bottom brace drop instead of reveal) -->
 					<div id="legend_box" class="flex-row" style="width: 400px; overflow: hidden; text-align: center;">
 						<div class="flex-col verti-spaced" style="align-self: flex-end; align-items: stretch;">
-							<div style="height: 0;"></div> <!-- a dummy to force padding -->
+							<div style="height: 0;"></div> <!-- a dummy to force spacing -->
 							<div style="display: flex; flex-direction: row; justify-content: space-around;">
-								<label class="cell unused">
+								<div class="cell unused">
 									<div>-</div>
-								</label>
-								<label class="cell opt-in">
+								</div>
+								<div class="cell opt-in">
 									<div>opt in</div>
-								</label>
-								<label class="cell opt-out">
+								</div>
+								<div class="cell opt-out">
 									<div>opt out</div>
-								</label>
-								<label class="cell used">
+								</div>
+								<div class="cell used">
 									<div>used</div>
-								</label>
+								</div>
 							</div>
 							<div style="display: flex; flex-direction: row; justify-content: space-around;">
-								<div style="width: 78px;">This website doesn't use your data this way.</div>
+								<div style="width: 78px;">This website doesn't use your data this way. However, it still collects it.</div>
 								<div style="width: 78px;">By default, this website doesn't use your data this way, unless you opt in.</div>
 								<div style="width: 78px;">By default, this website uses your data this way, unless you opt out.</div>
 								<div style="width: 78px;">This website uses your data this way.</div>
@@ -637,12 +735,6 @@
 						</div>
 					</div>
 				</div>
-			</div>
-			
-			<!-- message page -->
-			<div class="flex-col verti-spaced" style="height: 200px;">
-				<b id="message_title" class="big-font"></b>
-				<span id="message_body"></span>
 			</div>
 		</div>
 		
@@ -742,20 +834,18 @@
 				Cache & storage
 			</div>
 			<div style="margin-left: 16px;">
-				All privacy policy summaries from the server are cached.
-				If a website updates its policy, the updated summary
-				will only be seen after the old chached summary
-				expires.
-				<!-- <br />
-				The expired summary is moved to long-term storage, to be
-				compared to the next summary from the server to notify
-				on policy updates. -->
-				<br />
-				Clear the cache to load up-to-date summaries for all websites. 
+				All privacy policy summaries from the server are
+				cached.
+				When they expire, they move to long-term storage to
+				detect policy updates on the next time you visit their
+				website.<br/>
+				If a website updates its policy, its updated summary
+				will only be seen after its old cached summary
+				expires. Expire the cache to load up-to-date summaries for all websites .
 			</div>
 			
-			<div style="align-self: center;">
-				<button id="clear_cache" style="height: 80px; width: 120px; border-radius: 10px; overflow: hidden;">
+			<div class="flex-col" style="align-self: center;">
+				<button id="clear_cache" style="height: 70px; width: 120px; border-radius: 10px; overflow: hidden;">
 					<!-- due to `box-sizing: border-box;`, children with
 						width=height=100% will overflow (since the dims
 						include the border).
@@ -765,27 +855,82 @@
 					<div style="flex: 1; align-self: stretch; position: relative;">
 						<div id="clear_cache_progress_cont" style="height: 100%; width: 100%;"></div>
 						<div class="flex-col" style="position: absolute; top: 0; left: 0; height: 100%; width: 100%;">
-							<span class="big-font" style="font-weight: bolder;">CLEAR CACHE</span>
-							<span id="clear_cache_time" style="font-size: 10px;"></span>
+							<span class="big-font" style="font-weight: bolder;">EXPIRE CACHE</span>
+							<span id="clear_cache_time"></span>
 						</div>
 					</div>
 				</button>
-				<span id="cache_cleared_message" style="font-size: 10px; opacity: 0;">Cache cleared!</span>
+				<span id="cache_cleared_message" style="margin-top: 8px; opacity: 0;">Cache expired!</span>
 			</div>
 			
 		</div>
-		
+			
 		<div class="flex-col verti-spaced" style="padding: 32px; align-items: start;">
-			<div class="big-font" style="font-weight: bold;">Hi there!</div>
-			We're a group of 3 students (...).
-			We created this extension for a workshop class on security and privacy
-			usability, with the goal of increasing accessibility of privacy
-			policies to userto raise awareness to them.
-			Icon credits:
-			<a href="https://www.flaticon.com/free-icons/marker" title="marker icons">Marker icons created by Freepik - Flaticon</a>
-			Font credit:
-			Preliminary works:
-			<!-- Github link: https://github.com/DNekrassov/PrivacyHighlighters -->
+			<div class="big-font" style="font-weight: bold;">
+				Hi there!
+			</div>
+			
+			<div class="verti-spaced" style="padding-left: 16px;">
+				<div>
+					We're a group of 3 computer science students from
+					Tel-Aviv University. This extension is our project
+					for a workshop class on usable security and privacy.
+				</div>
+				<div>
+					We were tasked with using OpenAI's GPT models to
+					summarize websites' privacy policies and make as
+					accessible as possible to the average internet user.
+				</div>
+				<div>
+					Our goal is to raise the users' awareness to
+					website's data collection practices, and possibly
+					change their browsing habits.
+				</div>
+			</div>
+			
+			<div class="big-font" style="font-weight: bold;">
+				External resource credits
+			</div>
+			
+			<div style="padding-left: 16px;">
+				<div>
+					<a href="https://www.flaticon.com/free-icons/marker" title="marker icons">
+						Marker icons created by Freepik - Flaticon
+					</a>
+				</div>
+				<div>
+					<a href="https://fonts.google.com/specimen/Coda">
+						Coda font created by Vernon Adams - Google Fonts
+					</a>
+				</div>
+			</div>
+			
+			<!-- <div class="big-font" style="font-weight: bold;">
+				Preliminary works
+			</div>
+			
+			<div class="verti-spaced" style="padding-left: 16px;">
+				<div>
+					<a href="https://www.ftc.gov/sites/default/files/documents/public_comments/privacy-roundtables-comment-project-no.p095416-544506-00037/544506-00037.pdf">
+						P. G. Kelley, L. Cesca, J. Bresee, and L. F. Cranor. Standardizing privacy notices: an online study of the nutrition label approach. In Proceedings of CHI, 2010
+					</a>
+				</div>
+				<div>
+					<a href="https://www.usenix.org/system/files/conference/soups2015/soups15-paper-schaub.pdf">
+						F. Schaub, R. Balebako, A. L. Durity, and L. F. Cranor. A design space for effective privacy notices. 2015
+					</a>
+				</div>
+				<div>
+					<a href="https://dl.acm.org/doi/pdf/10.1145/3230665">
+						S. Wilson, F. Schaub, F. Liu, K. M. Sathyendra, D. Smullen, S. Zimmeck, R. Ramanath, P. Story, F. Liu, N. Sadeh, et al. Analyzing privacy policies at scale: From crowdsourcing to automated annotations. ACM Transactions on the Web (TWEB), 13(1):1–29, 2018
+					</a>
+				</div>
+				<div>
+					<a href="https://www.usenix.org/system/files/conference/usenixsecurity14/sec14-paper-zimmeck.pdf">
+						S. Zimmeck and S. M. Bellovin. Privee: An architecture for automatically analyzing web privacy policies. In Proceedings of USENIX Security, 2014
+					</a>
+				</div>
+			</div> -->
 		</div>
 	
 	</div>
