@@ -21,14 +21,16 @@ var Summary = {
 	
 	ROW_OFFSET: 2,
 	
+	cell_classes: ['uncollected', 'unused', 'opt-in', 'opt-out', 'used'],
+	
 	cell_texts: {
+		'uncollected': 'uncollected',
 		'unused': '-',
 		'opt-in': 'opt in',
 		'opt-out': 'opt out',
 		'used': 'used'
 	},
 	
-	cell_classes: ['unused', 'opt-in', 'opt-out', 'used'],
 	
 	create_cell(cls, text, with_weight) {
 		var cell = document.createElement('label');
@@ -77,13 +79,13 @@ var Summary = {
 				row.remove();
 	},
 
-	show_table() {
-		this.page_group.select(0);
-	},
-	
 	show_message(title, body) {
 		Elems.message_title.innerText = title;
 		Elems.message_body.innerText = body;
+		this.page_group.select(0);
+	},
+	
+	show_table() {
 		this.page_group.select(1);
 	},
 	
@@ -189,28 +191,22 @@ var Summary = {
 			else {
 				Summary.clear_table();
 		
+				var uncollected_list = [];
 				var unused_list = [];
 				Summary.res_json.table.forEach((row, i) => {
 					Summary.add_entry(row);
-					if (row.every(val => val == 0)) {
-						unused_list.push(Common.row_order[i].shown);
+					if (row.every(val => val < 2)) {
+						if (row.every(val => val == 0))
+							uncollected_list.push(Common.row_order[i].shown);
+						else
+							unused_list.push(Common.row_order[i].shown);
 						for (let table of Elems.tables.children)
 							table.children[Summary.ROW_OFFSET + i].classList.add('empty');
 					}
 				});
 				
-				// Common.row_order[i].forEach((row_config, i) => {
-				// 	var row = Summary.res_json.table[row_config.key];
-				// 	var vals = Common.col_order.map({key} => row[key]);
-				// 	Summary.add_entry(vals);
-					
-				// 	if (Object.values(vals).every(val => val == 0)) {
-				// 		unused_list.push(row_config.shown);
-				// 		for (let table of Elems.tables.children)
-				// 			table.children[Summary.ROW_OFFSET + i].classList.add('empty');
-				// 	}
-				// })
-				
+				Elems.uncollected.innerText = uncollected_list.length ?
+					uncollected_list.join(', ') : '-';
 				Elems.unused.innerText = unused_list.length ?
 					unused_list.join(', ') : '-';
 					
@@ -500,7 +496,7 @@ function clear_cache_button_init() {
 				i--;
 			}
 			else {
-				Common.clear_cache();
+				Common.inc_cache_counter();
 				cancel();
 				
 				Elems.cache_cleared_message.style.transition = 'none';
@@ -531,7 +527,7 @@ function onload() {
 	for (let elem of document.querySelectorAll('[id]'))
 		Elems[elem.id] = elem;
 	
-	Summary.page_group = new PageGroup(Elems.summary_pages, 0);
+	Summary.page_group = new PageGroup(Elems.summary_pages, 1);
 	init_menu();
 	clear_cache_button_init();
 	
