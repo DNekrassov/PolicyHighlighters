@@ -27,19 +27,27 @@ var Common = {
 		);
 	},
 	
-	sum(arr, f) {
-		if (f === undefined)
-			f = x => x;
-		return arr.reduce((partial_sum, val) => partial_sum + f(val), 0);
+	sum(arr) {
+		var s = 0;
+		for (let val of arr)
+			s += val;
+		return s;
+	},
+	
+	max(arr) {
+		var m = -Infinity;
+		for (let val of arr)
+			m = Math.max(m, val);
+		return m;
 	},
 	
 	get_max_score(weights) {
 		return this.sum(weights.rows) *
 			this.sum(weights.cols) *
-			weights.vals[weights.vals.length - 1];
+			this.max(weights.vals);
 	},
 	
-	get_grade(table, settings) {
+	calc_scores(table, settings) {
 		// copy. if all weights are zeros replace then with ones
 		var weights = {};
 		for (let key of ['rows', 'cols', 'vals']) {
@@ -54,7 +62,8 @@ var Common = {
 				score += weights.rows[i] * weights.cols[j] * weights.vals[val];
 			});
 		});
-		var norm_score = score / this.get_max_score(weights);
+		var max_score = this.get_max_score(weights);
+		var norm_score = score / max_score;
 		var grade = (
 			norm_score < 0.25 ? 'a' :
 			norm_score < 0.50 ? 'b' :
@@ -62,7 +71,12 @@ var Common = {
 			'd'
 		);
 		
-		return grade;
+		return {
+			score: score,
+			max_score: max_score,
+			norm_score: norm_score,
+			grade: grade
+		};
 	},
 	
 	matrixfy_table(table) {
@@ -99,11 +113,18 @@ var Common = {
 	},
 
 	clear_cache() {
+		// this also initializes settings
 		var cur_settings;
 		return this.get_settings().then(settings => {
 			cur_settings = settings;
 			return chrome.storage.local.clear();
 		}).then(() => chrome.storage.local.set(cur_settings));
+	},
+	
+	init_settings() {
+		return this.get_settings().then(
+			settings => chrome.storage.local.set(settings)
+		);
 	},
 	
 	inc_cache_counter() {
