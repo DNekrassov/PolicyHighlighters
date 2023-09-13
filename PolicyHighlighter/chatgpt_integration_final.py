@@ -1,14 +1,10 @@
 import openai
-from PolicyHighlighter.credentials import api_key
-from PolicyHighlighter.config import DEFAULT_JSON
-from flask import jsonify
+from credentials import api_key
 import json
 import re
 from transformers import pipeline
 import os
 import nltk
-import torch
-from transformers import BertTokenizer, BertForSequenceClassification
 from PolicyHighlighter.config import TABLE_CONFIG_FILEPATH
 
 os.environ["TOKENIZERS_PARALLELISM"] = "false"

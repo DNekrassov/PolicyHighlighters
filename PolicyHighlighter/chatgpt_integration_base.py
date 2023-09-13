@@ -1,7 +1,5 @@
 import openai
-from PolicyHighlighter.credentials import api_key
-from PolicyHighlighter.config import DEFAULT_JSON
-from flask import jsonify
+from credentials import api_key
 import json
 import re
 
