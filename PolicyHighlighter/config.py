@@ -1,5 +1,6 @@
 from enum import Enum
 
+
 class Config:
     SQLALCHEMY_DATABASE_URI = 'sqlite:///cache.db'
     SQLALCHEMY_BINDS = {
@@ -14,6 +15,7 @@ DEMO_META_FILEPATH = './privaseer_demo/metadata'
 DEMO_PRIVA_FILEPATH = './privaseer_demo/plaintext'
 FULL_META_FILEPATH = './privaseer_full/metadata'
 FULL_PRIVA_FILEPATH = './privaseer_full/boilerpipe-policy-text'
+TABLE_CONFIG_FILEPATH = './PolicyHighlighter/table_config.json'
 DEFAULT_JSON = None
 TEST_JSON = {
     "contacts": {"service": 0, "maintenance": 1, "marketing": 2, "profiling": 3, "other_companies": 0, "public_forums": 0},

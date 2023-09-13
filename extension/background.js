@@ -321,6 +321,7 @@ function CarpoolRequest(domain) {
 
 Object.assign(CarpoolRequest.prototype, {
 	respond_all() {
+	    console.log(this.res_json)
 		var self = this;
 		
 		if (this.res_json.table) {

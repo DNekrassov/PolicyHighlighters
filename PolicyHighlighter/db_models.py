@@ -31,6 +31,7 @@ class Policy(db.Model):
     def update_gpt_result(self, result):
         self.gpt_result = result
         self.has_result = (self.gpt_result != DEFAULT_JSON)
+        db.session.commit()
 
 
 class Meta(db.Model):
