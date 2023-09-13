@@ -177,6 +177,11 @@ Object.assign(TabClient.prototype, {
 	map_name: 'tabs',
 	
 	respond(req) {
+		// TODO: can get the weights only once (when fetch() finishes)
+		// and then pass it to all TabClient.respond()'s.
+		// but its gonna oercomplicate the current implementation
+		// and to be frank how many tabs are gonna be waiting for it?
+		// not many lol
 		chrome.action.setIcon({
 			tabId: this.tab_id,
 			path: req.icon
@@ -319,10 +324,10 @@ Object.assign(CarpoolRequest.prototype, {
 		var self = this;
 		
 		if (this.res_json.table) {
-			this.grade = Common.calc_scores(
+			this.grade = Common.get_grade(
 				Common.matrixfy_table(this.res_json.table),
 				this.settings
-			).grade;
+			);
 			this.icon = Defs.get_icon_sizes(this.grade);
 		}
 		else
@@ -579,15 +584,19 @@ var Tabs = {
 };
 
 
-
-
+function init_settings() {
+	return Common.get_settings().then(
+		settings => chrome.storage.local.set(settings)
+	);
+}
 
 Common.init().then(() => Promise.all([
 	Common.import_json('statuses.json').then(statuses_json => {
 		for (let status of statuses_json.statuses)
 			Defs.statuses.server.set(status.code, status);
 	}),
-	Common.init_settings()
+	// chrome.storage.local.clear(),
+	Common.clear_cache() // init_settings() // TODO: switch back
 ])).then(() => {
 	TabClient.init();
 	PortClient.init();
