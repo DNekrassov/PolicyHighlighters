@@ -8,7 +8,7 @@ from werkzeug.serving import is_running_from_reloader
 
 from PolicyHighlighter.db_models import Policy, Meta, Priva
 from PolicyHighlighter import db
-from PolicyHighlighter.config import META_FILEPATH, PRIVA_FILEPATH, DEFAULT_JSON
+from PolicyHighlighter.config import DEMO_META_FILEPATH, DEMO_PRIVA_FILEPATH, FULL_META_FILEPATH, FULL_PRIVA_FILEPATH, DEFAULT_JSON, dataMode
 from PolicyHighlighter.status import Status
 
 
@@ -27,9 +27,6 @@ def check_policy_by_url(policy_url):
                 policy = Policy(url=policy_url)
                 db.session.add(policy)
 
-            # FUTURE TODO: Need to deal with sanitizing the text
-            # policy_text = re.sub(r"(@\[A-Za-z0-9]+)|([^0-9A-Za-z \t])|(\w+:\/\/\S+)|^rt|http.+?", "", policy_text)
-
             policy.update_policy_text(policy_text)
             policy.update_meta_info(meta_entry.timestamp, meta_entry.probability)
 
@@ -38,17 +35,24 @@ def check_policy_by_url(policy_url):
         return policy
 
 
-def load_meta_data():
+def load_meta_data(mode=dataMode.mode_FULL_DB):
     if is_running_from_reloader():
         return
 
     if Meta.query.first():
         return
 
-    meta_file = glob.glob1(META_FILEPATH, "*.jsonl")[0]
-    filepath = META_FILEPATH + "/" + meta_file
-    with open(filepath, 'r') as json_file:
-        json_list = list(json_file)
+    if mode == dataMode.mode_DEMO_DB:
+        meta_file = glob.glob1(DEMO_META_FILEPATH, "*.jsonl")[0]
+        filepath = DEMO_META_FILEPATH + "/" + meta_file
+        with open(filepath, 'r') as json_file:
+            json_list = list(json_file)
+
+    if mode == dataMode.mode_FULL_DB:
+        meta_file = glob.glob1(FULL_META_FILEPATH, "*.jsonl")[0]
+        filepath = FULL_META_FILEPATH + "/" + meta_file
+        with open(filepath, 'r') as json_file:
+            json_list = list(json_file)
 
     for json_str in json_list:
         obj = json.loads(json_str)
@@ -102,7 +106,6 @@ def check_internal_policy_DB(policy_url):
 
     policy_hash, file_num = meta_entry.hash, meta_entry.file_path
 
-    # Future TODO: Try and replace it with a simple check whether file was read?
     priva_entry = Priva.query.filter_by(hash=policy_hash).first()
     if priva_entry is None:  # Not found in current Priva - might be from a different file
         load_priva_data(file_num)
@@ -113,12 +116,21 @@ def check_internal_policy_DB(policy_url):
     return True, priva_entry.text, meta_entry
 
 
-def load_priva_data(file_num=-1):
-    if file_num == -1:
-        priva_files = glob.glob1(PRIVA_FILEPATH, "*.json")
-    else:
-        filepath = PRIVA_FILEPATH + "/" + str(file_num) + ".json"
-        priva_files = [filepath]
+def load_priva_data(file_num=-1, mode=dataMode.mode_FULL_DB):
+    priva_files = []
+    if mode == dataMode.mode_DEMO_DB:
+        if file_num == -1:
+            priva_files = glob.glob1(DEMO_PRIVA_FILEPATH, "*.json")
+        else:
+            filepath = DEMO_PRIVA_FILEPATH + "/" + str(file_num) + ".json"
+            priva_files = [filepath]
+
+    if mode == dataMode.mode_FULL_DB:
+        if file_num == -1:
+            priva_files = glob.glob1(FULL_PRIVA_FILEPATH, "*")
+        else:
+            filepath = FULL_PRIVA_FILEPATH + "/" + str(file_num)
+            priva_files = [filepath]
 
     for file in priva_files:
         with open(file, 'r') as json_file:

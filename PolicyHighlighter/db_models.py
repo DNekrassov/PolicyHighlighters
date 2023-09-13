@@ -25,7 +25,7 @@ class Policy(db.Model):
         self.has_policy = (self.policy_text != "")
 
     def update_meta_info(self, timestamp, probability):
-        self.timestamp = timestamp
+        self.timestamp = timestamp.replace('\\', '')
         self.probability = int(probability*100)
 
     def update_gpt_result(self, result):
