@@ -1,23 +1,25 @@
 {
 	"row_order": [
-		{"key": "contacts",         "prompt": "contact information such as the user's phone number, email address, fax number, mailing number, social media profiles and other contact information", "shown": "Contacts"},
-		{"key": "cookies",          "prompt": "cookies", "shown": "Cookies"},
-		{"key": "demographics",     "prompt": "demographic information such as age, gender,location data race and ethnicity, household size, occupation and other demographic information about the user", "shown": "Demographics"},
-		{"key": "health_info",      "prompt": "health information about the user such as medical history, fitness and activity data and other information about the user's health", "shown": "Health info"},
-		{"key": "preferences",      "prompt": "preferences such as content preferences, language preference, notification preference, privacy settings, ad preferences and other user preferences", "shown": "Preferences"},
-		{"key": "purchases",        "prompt": "purchases information such as the products that the user have purchased, the shipping information, coupons and discounts that the user used with paying for the purchase and more information regarding he purchases of the user", "shown": "Purchases"},
-		{"key": "credit_card_info", "prompt": "user's credit card information such as the number of user's credit card he entered for payments on the website", "shown": "Credit card info"},
-		{"key": "social_security",  "prompt": "social security number", "shown": "Social security"},
-		{"key": "site_activity",    "prompt": "activity on the site such as the pages that the user visits, the session duration, search queries the user entered, the interaction that the user made on the website and more of the user activities on the site", "shown": "Site activity"}
+		{"key": "preferences",      "weight": 1,   "shown": "Preferences",      "prompt": "preferences such as content preferences, language preference, notification preference, privacy settings, ad preferences and other user preferences"},
+		{"key": "site_activity",    "weight": 1.5, "shown": "Site activity",    "prompt": "activity on the site such as the pages that the user visits, the session duration, search queries the user entered, the interaction that the user made on the website and more of the user activities on the site"},
+		{"key": "contacts",         "weight": 3,   "shown": "Contact info",     "prompt": "contact information such as the user's phone number, email address, fax number, mailing number, social media profiles and other contact information"},
+		{"key": "cookies",          "weight": 5,   "shown": "Cookies",          "prompt": "cookies"},
+		{"key": "demographics",     "weight": 5,   "shown": "Demographics",     "prompt": "demographic information such as age, gender, location data, race and ethnicity, household size, occupation and other demographic information about the user"},
+		{"key": "purchases",        "weight": 5,   "shown": "Purchases",        "prompt": "purchases information such as the products that the user have purchased, the shipping information, coupons and discounts that the user used with paying for the purchase and more information regarding the purchases of the user"},
+		{"key": "credit_card_info", "weight": 8,   "shown": "Credit card info", "prompt": "user's credit card information such as the number of user's credit card he entered for payments on the website"},
+		{"key": "social_security",  "weight": 8,   "shown": "Social security",  "prompt": "social security number"},
+		{"key": "health_info",      "weight": 10,  "shown": "Health info",      "prompt": "health information about the user such as medical history, fitness and activity data and other information about the user's health"}
 	],
+
 	"col_order": [
-		{"key": "service",         "prompt": "providing service for the user such as personalized content recommendations, customized advertising, and other services and features that enhance the user experience on the website", "shown": "Service"},
-		{"key": "maintenance",     "prompt": "Identifying problems that the users encounter, improving site performance, and enhancing reliability", "shown": "Maintenance"},
-		{"key": "marketing",       "prompt": "marketing and advertising", "shown": "Marketing"},
-		{"key": "profiling",       "prompt": "creating a detailed and comprehensive profile of the user such as collecting and analyzing various types of data about the user to create a detailed profile that describe the user's behaviour patterns on the website, interests of data and more profiling", "shown": "Profiling"},
-		{"key": "other_companies", "prompt": "sharing the data with other companies that can be third party service providers such as payment processors, email delivery services, third party analytics and advertising platforms, companies in partnership with the website and other companies or third parties", "shown": "Companies"},
-		{"key": "public_forums",   "prompt": "sharing the data with public forums such as public discussion boards, social media platforms and other public forums", "shown": "Forums"}
+		{"key": "service",          "weight": 1,   "shown": "Service",          "prompt": "providing service for the user such as personalized content recommendations, customized advertising, and other services and features that enhance the user experience on the website"},
+		{"key": "maintenance",      "weight": 1.5, "shown": "Maintenance",      "prompt": "identifying problems that the users encounter, improving site performance, and enhancing reliability"},
+		{"key": "profiling",        "weight": 3,   "shown": "Profiling",        "prompt": "creating a detailed and comprehensive profile of the user such as collecting and analyzing various types of data about the user to create a detailed profile that describe the user's behaviour patterns on the website, interests of data and more profiling"},
+		{"key": "marketing",        "weight": 5,   "shown": "Marketing",        "prompt": "marketing and advertising"},
+		{"key": "other_companies",  "weight": 10,  "shown": "Companies",        "prompt": "sharing the data with other companies that can be third party service providers such as payment processors, email delivery services, third party analytics and advertising platforms, companies in partnership with the website and other companies or third parties"},
+		{"key": "public_forums",    "weight": 15,  "shown": "Forums",           "prompt": "sharing the data with public forums such as public discussion boards, social media platforms and other public forums"}
 	],
+
 	"val_nums": {
 		"uncollected": 0,
 		"unused": 1,
@@ -26,5 +28,3 @@
 		"used": 4
 	}
 }
-
-

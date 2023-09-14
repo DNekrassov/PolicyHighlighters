@@ -1,15 +1,9 @@
 import openai
 from credentials import api_key
+from PolicyHighlighter.config import DEFAULT_JSON, TABLE_CONFIG_FILEPATH
+from flask import jsonify
 import json
 import re
-from transformers import pipeline
-import os
-import nltk
-from PolicyHighlighter.config import TABLE_CONFIG_FILEPATH
-
-os.environ["TOKENIZERS_PARALLELISM"] = "false"
-# Download NLTK resources
-nltk.download('punkt')
 
 # The api_key used to interact with the chatgpt api
 openai.api_key = api_key
@@ -20,7 +14,7 @@ table_config = open(TABLE_CONFIG_FILEPATH)
 # return the JSON object as a dictionary
 table_data = json.load(table_config)
 
-# Read the information categories, ways of use and values from the config_table
+# Read the information categories and ways of use from the config_table json
 row_order = table_data["row_order"]
 information_categories = [row['key'] for row in row_order]
 categories_prompts = [row["prompt"] for row in row_order]
@@ -30,6 +24,7 @@ ways_of_use = [col["key"] for col in col_order]
 uses_prompts = [col["prompt"] for col in col_order]
 
 vals = ["unused", "opt in", "opt out", "used", "uncollected", "collected"]
+
 # Define a mapping from input values to vals
 value_to_val_mapping = {
     "1": "unused",
@@ -41,9 +36,11 @@ value_to_val_mapping = {
 }
 
 
-# split_into_paragraphs is a function that takes a text as an input and splits the text into paragraphs while
-# maintaining a max length of 4000 to prevent exceeding the maximum length of the prompt
 def join_paragraphs(paragraphs):
+    """
+    join_paragraphs is a function that takes a text as an input a list of paragraphs
+    and joins paragraphs while maintaining a max length of 4000 to prevent exceeding the maximum length of the prompt
+    """
     result = []
     i = 0
     while i < len(paragraphs) - 1:
@@ -59,8 +56,11 @@ def join_paragraphs(paragraphs):
     return result
 
 
-# Function to classify a privacy policy paragraph
-def classify_paragraphs(privacy_policy_text, threshold=0.5):
+def classify_paragraphs(privacy_policy_text):
+    """
+    classify_paragraphs is a function that categorize a privacy policy paragraph
+    """
+
     categorized_paragraphs = {category: [] for category in information_categories}
 
     # Preprocess the text
@@ -71,19 +71,9 @@ def classify_paragraphs(privacy_policy_text, threshold=0.5):
     for paragraph in paragraphs:
         if re.search(r"(collect|share|opt-out|opt out|opt-in|opt in|opt_out|opt_in|optional|remove|choose|)", paragraph, re.IGNORECASE):
             universal_paragraphs.append(paragraph)
-    # Load pre-trained language model
-    model_name = "bert-base-uncased"
-    nlp = pipeline("text-classification", model=model_name)
 
     # Categorize the paragraphs using the pre-trained language model
     for paragraph in paragraphs:
-        # # Tokenize the input text
-        # input_ids = tokenizer.encode(paragraph, add_special_tokens=True, truncation=True, max_length=512, padding=True, return_tensors="pt")
-        #
-        # # Make a prediction
-        # with torch.no_grad():
-        #     outputs = model(input_ids)
-
         if re.search(r"\b(phone|email|contact|contact details|address)\b", paragraph, re.IGNORECASE):
             categorized_paragraphs["contacts"].append(paragraph)
         elif re.search(r"\b(cookie|tracking|web cookies|cookie information|cookie policy)\b", paragraph, re.IGNORECASE):
@@ -102,12 +92,8 @@ def classify_paragraphs(privacy_policy_text, threshold=0.5):
             categorized_paragraphs["credit_card_info"].append(paragraph)
         elif re.search(r"\b(social|security|number|id)\b", paragraph, re.IGNORECASE):
             categorized_paragraphs["social_security"].append(paragraph)
-        # elif  re.search(r"\b(government id|id)\b", paragraph, re.IGNORECASE):
-        #     categorized_paragraphs["gov_id"].append(paragraph)
         elif re.search(r"\b(activity|log|web log|pages|visit|session|search|history|interaction)\b", paragraph, re.IGNORECASE):
             categorized_paragraphs["site_activity"].append(paragraph)
-        # elif  re.search(r"\b(location)\b", paragraph, re.IGNORECASE):
-        #     categorized_paragraphs["location"].append(paragraph)
     # Add universal paragraphs to all categories
     for category in categorized_paragraphs.keys():
         categorized_paragraphs[category].extend(universal_paragraphs)
@@ -115,8 +101,10 @@ def classify_paragraphs(privacy_policy_text, threshold=0.5):
     return categorized_paragraphs
 
 
-# Function to send a prompt to the OpenAI API and get a response
 def query_gpt(prompt):
+    """
+    query_gpt is a function to send a prompt to the OpenAI API and get a response
+    """
     response = openai.ChatCompletion.create(
         model="gpt-3.5-turbo-16k",
         messages=[
@@ -147,7 +135,8 @@ def query_gpt(prompt):
 
 def chatgpt_policy_request(privacy_policy_text):
     """
-    Gets the Privacy Policy text and returns a JSON with the table parameters
+    chatgpt_policy_request is a function that takes as an input the privay policy text
+    and returns a JSON with the table parameters
 
     Parameters
     ------------
@@ -175,13 +164,11 @@ def chatgpt_policy_request(privacy_policy_text):
                          f"the way of use: {use_prompt}"
                 response = query_gpt(prompt).lower()
                 answer_to_statements = response.split('\n')
-                print(answer_to_statements)
                 for line in answer_to_statements:
                     contains_numeric = any(char.isnumeric() for char in line)
                     if not contains_numeric:
                         break
                     if len(line) > 23:
-                        print("in")
                         prompt = f"reanswer the previous prompt with only the number of the statemnt+':' + yes or no or not stated depending on the statement. i want the response text to only include the numbers of the statements, without any extra words but yes/no/not stated"
                         response = query_gpt(prompt).lower()
                         answer_to_statements = response.split('\n')
@@ -189,7 +176,6 @@ def chatgpt_policy_request(privacy_policy_text):
                     contains_numeric = any(char.isnumeric() for char in line)
                     if not contains_numeric:
                         break
-                    print(line, "\n")
                     parts = []
                     if ":" in line:
                         parts = line.split(': ')
@@ -199,7 +185,6 @@ def chatgpt_policy_request(privacy_policy_text):
                         parts = line.split('. ')
                         if len(parts) == 1:
                             parts = line.split(".")
-                    print(parts, "\n")
                     statement_number, statement_val = parts
                     # Extract the numeric part from statement_number using regular expressions
                     numeric_part = re.search(r'\d+', statement_number)
@@ -207,7 +192,6 @@ def chatgpt_policy_request(privacy_policy_text):
                         val = value_to_val_mapping.get(numeric_part.group(0))  # Use the numeric part for mapping
                         if val:
                             prompt_results[category][use][val].add(statement_val)
-    print(prompt_results)
     results = {category: {use: [] for use in ways_of_use} for category in information_categories}
     for category in prompt_results:
         collected_status = None
@@ -233,5 +217,4 @@ def chatgpt_policy_request(privacy_policy_text):
                 results[category][use] = "uncollected"
 
     results_as_json = json.dumps(results)
-    print(results_as_json)
     return results_as_json
