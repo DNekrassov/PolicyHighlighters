@@ -105,8 +105,8 @@ var Common = {
 			'.legend': true,
 			'.cache_counter': 0,
 			'.weights': {
-				'rows': Array(Common.row_order.length).fill(1),
-				'cols': Array(Common.col_order.length).fill(1),
+				'rows': Common.row_order.map(({weight}) => weight), // Array(Common.row_order.length).fill(1),
+				'cols': Common.col_order.map(({weight}) => weight), // Array(Common.col_order.length).fill(1),
 				'vals': [0, 0.2, 0.3, 0.7, 1]
 			}
 		});

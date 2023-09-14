@@ -44,10 +44,10 @@ var Summary = {
 		if (with_weight) {
 			var textbox = document.createElement('input');
 			textbox.type = 'text';
-			var weight = document.createElement('div');
-			weight.classList.add('weight-input', 'weight');
-			weight.append(textbox);
-			cell.append(weight);
+			var weight_input = document.createElement('div');
+			weight_input.classList.add('weight-input');
+			weight_input.append(textbox);
+			cell.append(weight_input);
 		}
 		
 		return cell;
@@ -90,20 +90,28 @@ var Summary = {
 	},
 	
 	init() {
-		for (let {shown} of Common.row_order) {
+		for (let {shown, prompt} of Common.row_order) {
 			var row = this.create_row([]);
-			row.append(this.create_cell('header', shown, true));
+			var cell = this.create_cell('header', shown, true)
+			cell.title = prompt;
+			row.append(cell);
 			Elems.tables.children[0].append(row);
 		}
 		
 		var row = this.create_row([]);
-		for (let {shown} of Common.col_order.slice(0, 4))
-			row.append(this.create_cell('header', shown, true));
+		for (let {shown, prompt} of Common.col_order.slice(0, 4)) {
+			var cell = this.create_cell('header', shown, true);
+			cell.title = prompt;
+			row.append(cell);
+		}
 		Elems.tables.children[1].append(row);
 		
 		var row = this.create_row([]);
-		for (let {shown} of Common.col_order.slice(4, 6))
-			row.append(this.create_cell('header', shown, true));
+		for (let {shown, prompt} of Common.col_order.slice(4, 6)) {
+			var cell = this.create_cell('header', shown, true);
+			cell.title = prompt;
+			row.append(cell);
+		}
 		Elems.tables.children[2].append(row);
 		
 		var edit_mode_checkbox = document.querySelector('[name=edit_mode]');

@@ -471,16 +471,7 @@
 			border-style: solid;
 		}
 		.weight-input:before {
-/*			margin-right: 4px;*/
-		}
-		.weight-input.weight:before {
 			content: "Wt. ";
-		}
-		.weight-input.severity:before {
-			content: "Sev.";
-		}
-		.weight-input.severity:after {
-			content: "%";
 		}
 		
 		.weight-input input {
@@ -490,11 +481,8 @@
 			border-width: 0 0 1px;
 			border-color: transparent;
 		}
-		.weight-input.weight input {
+		.weight-input input {
 			width: 24px;
-		}
-		.weight-input.severity input {
-			width: 20px;
 		}
 		label:hover .weight-input,
 		.weight-input:has(input:focus) {
@@ -617,9 +605,9 @@
 				</div>
 				
 				<div id="edit_info_box" class="hidden edited flex-col" style="margin-top: 16px;">
-					<div class="dim flex-row" style="width: 320px; margin-bottom: 32px;">
+					<div class="dim flex-row" style="width: 340px; margin-bottom: 32px;">
 						<b style="margin-right: 6px;">Max score:</b>
-						<div id="max_score" style="flex: 1;"></div>
+						<div id="max_score" style="flex: 1; overflow-x: hidden; text-overflow: ellipsis;"></div>
 						
 						<b style="margin-left: 20px; margin-right: 6px;">Policy score: </b>
 						<span id="norm_score" style="width: calc(31px + 4px);"></span>
@@ -642,7 +630,7 @@
 							The grade is the decided by how big the
 							policy's score is compared to the maximal
 							policy score (= the score of a table that's
-							filled with the maximal-weight cell value)
+							filled with the maximal-weight cell value).
 						</div>
 					</div>
 					
@@ -650,29 +638,33 @@
 						<!-- this is here just so coutneing starts at index 1 -->
 						<label class="cell uncollected hidden">
 							<div>uncollected</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						
 						<label class="cell unused">
 							<div>-</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell opt-in">
 							<div>opt in</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell opt-out">
 							<div>opt out</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 						<label class="cell used">
 							<div>used</div>
-							<div class="weight-input weight"><input type="text" /></div>
+							<div class="weight-input"><input type="text" /></div>
 						</label>
 					</div>
 				</div>
 				
-				<div id="tables" style="margin: 32px 0 16px;">
+				<div class="dim" style="margin-top: 32px;">
+					<b>Tip:</b> hover over the row and column headers to
+					learn more
+				</div>
+				<div id="tables" style="margin: 16px 0;">
 					<div class="table">
 						<!-- dummy elements to take up the brace row and
 							header cell row just like tables 1 and 2 -->

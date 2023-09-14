@@ -588,6 +588,7 @@ Common.init().then(() => Promise.all([
 		for (let status of statuses_json.statuses)
 			Defs.statuses.server.set(status.code, status);
 	}),
+	// chrome.storage.local.clear()
 	Common.init_settings()
 ])).then(() => {
 	TabClient.init();
